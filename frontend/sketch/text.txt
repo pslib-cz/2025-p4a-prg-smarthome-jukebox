@@ -1,0 +1,171 @@
+Pro tvůj sketch (návrh designu) frontendu je klíčové, aby dashboard vypadal jako moderní „řídicí centrum“ nebo „DJ pult“. Protože projekt staví na atmosféře a hudbě, vizuál by měl být tmavý (Dark Mode) s výraznými barevnými akcenty pro různé režimy.
+
+Zde je podrobný rozpis toho, co by měl frontend vizuálně obsahovat:
+
+1. Celkový styl (UI/UX)
+
+Vzhled: „Cyberpunk / Studio Console“. Tmavé pozadí (tmavě šedá/černá), zaoblené rohy, skleněný efekt (Glassmorphism).
+
+Barevné kódování:
+
+Focus: Modrá / Azurová (klid).
+
+Party: Purpurová / Červená (energie).
+
+Casual: Zelená / Oranžová (pohoda).
+
+Eco: Tlumená šedá (vypnuto).
+
+2. Hlavní sekce Dashboardu
+A. Sekce "Now Playing" (Srdce dashboardu)
+
+Toto bude nejvýraznější část, která čerpá data z Music Assistantu/Spotify.
+
+Album Art: Velký čtvercový obrázek alba (pokud hraje Spotify) nebo ikona noty (pokud hraje lokální MP3).
+
+Metadata: Název skladby (tučně) a interpret (menším písmem).
+
+Progress Bar: Časová osa skladby (aktuální čas / celková délka).
+
+Playback Controls: Velká tlačítka pro Play/Pause, Skip Next (tato tlačítka budou posílat MQTT příkazy).
+
+B. Sekce "Environment & Telemetry" (Senzory)
+
+Zde ukážeš, co „vidí“ krabička v reálném čase.
+
+Vzdálenost (Distance Sensor):
+
+Vizualizace: Dynamický pruh nebo kruhový ukazatel (Gauge).
+
+Čím blíže uživatel je, tím víc se ukazatel plní.
+
+Text: "User distance: 45 cm".
+
+Presence Status: Ikona panáčka. Svítí, když senzorová fúze (Ping + Distance) vyhodnotí, že jsi přítomen.
+
+Clap Indicator: Malá ikona tleskajících rukou, která se krátce rozsvítí (animace), když ESP detekuje tlesknutí.
+
+C. Sekce "Mode Selector" (Ovládací pady)
+
+Tři velká, stylová tlačítka pro manuální přepínání režimů (místo hlasu/tlesknutí).
+
+Tlačítko [FOCUS]
+
+Tlačítko [PARTY]
+
+Tlačítko [CASUAL]
+
+Stav: Aktivní tlačítko by mělo mít „glow“ efekt (záři) ve své barvě.
+
+D. Sekce "System Info & Security"
+
+Log posledních akcí: Malé textové okno (scrollovací), kde se objevují zprávy:
+
+14:20 - Voice Command: "Party Mode"
+
+14:25 - User detected by proximity
+
+14:30 - Mode changed to Focus
+
+Stav připojení: Malé ikony v rohu:
+
+MQTT: Connected (zelená tečka).
+
+SSL: Secured (ikona zámku).
+
+ESP32: Online.
+
+3. Interaktivní prvky (Vychytávky)
+
+Volume Slider: Vertikální nebo horizontální posuvník. Může měnit barvu podle hlasitosti (zelená -> žlutá -> červená).
+
+Visualizer (Optional): Pokud bude Student C šikovný, může do pozadí nebo pod album art přidat jednoduchou animaci vlnovky, která se hýbe, když hraje hudba (simulace VU metru).
+
+4. Technické prvky pro Sketch (Popisky pro učitele)
+
+Do svého sketche si přidej popisky k prvkům, abys ukázal, jak to funguje pod kapotou:
+
+U grafu vzdálenosti: „Real-time data stream via MQTT WebSockets“.
+
+U ovládání hudby: „Bi-directional Spotify sync“.
+
+U mikrofonu (pokud tam bude): „Web Speech API - Voice to Text“.
+
+5. Rozložení (Layout) - Příklad
+
+Levý sloupec (1/3): Telemetrie (Vzdálenost, Přítomnost, Logy).
+
+Střed (1/3): Now Playing (Album art, Playback controls).
+
+Pravý sloupec (1/3): Režimy (Focus/Party/Casual) + Master Volume.
+
+Tip pro Studenta C: Pro první návrh (sketch) můžeš použít nástroje jako Figma nebo Excalidraw, případně to nakreslit rukou na tablet. Zaměř se na to, aby dashboard vypadal jako aplikace, ne jako webová stránka z roku 2005.
+
+Potřebuješ pomoci s konkrétním kódem pro některou z těchto částí (např. jak napojit ten MQTT graf)?
+
+#	Požadavek ze zadání	Priorita	Popis
+1	Mode Selector (Focus / Party / Casual / Eco / Custom)	🔴 Hlavní	5 velké padové tlačítka s glow efektem v barvě režimu
+2	Environment & Telemetry sekce	🔴 Hlavní	Distance sensor gauge, Presence status (ikona panáčka), Clap indicator
+3	System Info & Security	🟡 Střední	Log posledních akcí (scrollovací), ikony stavu MQTT/SSL/ESP32
+4	Glassmorphism efekt	🟡 Střední	Skleněný efekt na panelech
+5	Audio Visualizer	🟢 Optional	VU metr / vlnovka animace pod album artem
+6	Technické popisky (pro učitele)	🟢 Nice-to-have	Malé labely typu "MQTT WebSockets", "Spotify sync" atd.
+
+----
+starý chat:
+
+
+
+Thought for 14s
+
+
+
+
+
+
+To je super nápad! Vizualizer jako ring kolem vinylu — místo vlnovky budou sloupečky (frekvence) radiálně kolem dokola. Půjde to! Udělám to jako canvas kolem vinyl recordu, se simulovanými daty (protože nemáme reálné audio).
+
+Created
+AudioVisualizer.tsx
++157
+-0
+Now update the VinylRecord component to wrap the visualizer around it:
+
+Edited
+VinylRecord.tsx
++21
+-18
+1
+Now pass the theme prop from App.tsx:
+
+Analyzed
+App.tsx#L218-230
+Analyzed
+App.tsx#L233-240
+Edited
+App.tsx
++1
+-0
+Now add the CSS for the visualizer canvas positioning:
+
+Analyzed
+App.css#L392-402
+Edited
+App.css
++16
+-0
+12
+I see — the replacement broke the CSS because it split .vinyl-record into two blocks with a closing } then loose properties. Let me fix this:
+
+Analyzed
+App.css#L410-435
+Edited
+App.css
++0
+-1
+Let me verify everything compiles clean:
+
+Checked command status
+Error
+You have exhausted your quota on this model.
+You have reached the quota limit for this model. You can resume using this model at 3/17/2026, 8:35:35 AM. You can upgrade to the Google AI Ultra plan to receive the highest rate limits. See plans.

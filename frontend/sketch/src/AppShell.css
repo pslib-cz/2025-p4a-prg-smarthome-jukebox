@@ -1,0 +1,86 @@
+.app-shell {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-primary);
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+  scrollbar-gutter: stable;
+  will-change: scroll-position;
+}
+
+.hero-screen,
+.signal-bay-screen {
+  position: relative;
+  scroll-snap-align: start;
+}
+
+.hero-screen {
+  position: sticky;
+  top: 0;
+  isolation: isolate;
+  height: 100vh;
+  min-height: 100vh;
+  z-index: 1;
+}
+
+.signal-bay-screen {
+  margin-top: -28px;
+  padding: 0;
+  z-index: 4;
+  background: transparent;
+}
+
+.signal-bay-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Use a solid semi-opaque overlay instead of backdrop-filter blur.
+     backdrop-filter: blur(22px) forces full-area GPU compositing every
+     frame and is the #1 source of jank when Signal Bay is visible. */
+  background: rgba(250, 246, 241, 0.92);
+  pointer-events: none;
+}
+
+[data-theme="disco"] .signal-bay-screen::before {
+  background: rgba(13, 5, 32, 0.92);
+}
+
+[data-theme="focus"] .signal-bay-screen::before {
+  background: rgba(10, 18, 34, 0.92);
+}
+
+[data-theme="eco"] .signal-bay-screen::before {
+  background: rgba(10, 24, 16, 0.92);
+}
+
+.app-shell::-webkit-scrollbar {
+  width: 10px;
+}
+
+.app-shell::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-shell::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgba(166, 124, 82, 0.28);
+  background-clip: padding-box;
+}
+
+[data-theme="disco"] .app-shell::-webkit-scrollbar-thumb {
+  background: rgba(155, 89, 247, 0.36);
+  background-clip: padding-box;
+}
+
+[data-theme="focus"] .app-shell::-webkit-scrollbar-thumb {
+  background: rgba(46, 155, 172, 0.36);
+  background-clip: padding-box;
+}
+
+[data-theme="eco"] .app-shell::-webkit-scrollbar-thumb {
+  background: rgba(61, 168, 94, 0.36);
+  background-clip: padding-box;
+}

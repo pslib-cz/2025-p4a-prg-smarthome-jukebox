@@ -1,0 +1,127 @@
+@keyframes signal-bay-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Only animate compositor-friendly properties (transform + opacity).
+   box-shadow changes were removed — they triggered a full repaint per frame.
+   The static box-shadow is set on the element itself. */
+@keyframes signal-bay-core-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 1;
+  }
+}
+
+@keyframes signal-bay-dot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+}
+
+@keyframes signal-bay-led-blink {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  45% {
+    opacity: 1;
+  }
+}
+
+@keyframes clap-trace-breathe {
+  0%,
+  100% {
+    transform: scaleY(0.94);
+  }
+  50% {
+    transform: scaleY(1.04);
+  }
+}
+
+@keyframes event-tape-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1180px) {
+  .signal-bay-header {
+    flex-direction: column;
+  }
+
+  .signal-bay-summary {
+    flex-basis: auto;
+  }
+
+  .signal-bay-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "pulse"
+      "links"
+      "trace"
+      "memory"
+      "tape";
+  }
+}
+
+@media (max-width: 860px) {
+  .signal-bay-frame {
+    padding: 24px;
+    border-radius: 26px;
+  }
+
+  .room-pulse-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .room-pulse-readouts,
+  .clap-trace-meta,
+  .event-tape-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .signal-bay-frame {
+    padding: 20px;
+  }
+
+  .bay-panel {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .room-radar {
+    width: min(100%, 280px);
+  }
+
+  .room-radar-label {
+    display: none;
+  }
+
+  .event-tape-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

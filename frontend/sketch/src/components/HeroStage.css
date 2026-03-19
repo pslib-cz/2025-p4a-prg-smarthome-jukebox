@@ -1,0 +1,85 @@
+.center-area {
+  justify-content: center;
+  padding: 20px 40px 22px;
+}
+
+.center-area .vinyl-container {
+  margin-bottom: 0;
+  transform: translateY(-6px);
+}
+
+.center-bottom-stack {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(48px, 8vh, 88px);
+  transform: translateX(-50%);
+  width: min(100%, 390px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 1;
+}
+
+.center-bottom-stack .song-info {
+  margin-bottom: 0;
+}
+
+.center-bottom-stack .song-title {
+  font-size: 1.32rem;
+  margin-bottom: 2px;
+}
+
+.center-bottom-stack .song-artist {
+  font-size: 0.88rem;
+  margin-bottom: 1px;
+}
+
+.center-bottom-stack .song-album {
+  font-size: 0.76rem;
+}
+
+.center-bottom-stack .progress-bar-wrapper {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 0;
+}
+
+.center-bottom-stack .playback-controls {
+  gap: 20px;
+}
+
+.center-bottom-stack .btn-control {
+  padding: 6px;
+}
+
+.center-bottom-stack .btn-play {
+  width: 52px;
+  height: 52px;
+}
+
+@media (max-height: 760px) {
+  .center-area .vinyl-container {
+    transform: translateY(-14px) scale(0.94);
+  }
+
+  .center-bottom-stack {
+    bottom: 40px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 900px) {
+  .center-area {
+    padding: 16px 28px 22px;
+  }
+
+  .center-bottom-stack {
+    width: min(100%, 360px);
+    bottom: 92px;
+  }
+
+  .center-area .vinyl-container {
+    transform: translateY(-4px) scale(0.94);
+  }
+}

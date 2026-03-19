@@ -1,0 +1,214 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap");
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Casual Mode — Cozy Latte / Coffee palette ☕ (default) */
+  --bg-primary: #faf6f1;
+  --bg-secondary: #fdf9f5;
+  --bg-panel: #fefcfa;
+  --bg-panel-hover: rgba(193, 154, 107, 0.08);
+  --bg-active: linear-gradient(135deg, #f5ebe0 0%, #faecd8 100%);
+  --bg-slider-track: #e0d5c8;
+  --bg-slider-fill: #a67c52;
+  --bg-slider-thumb: #fffdf9;
+  --bg-vinyl-outer: #2c1e14;
+  --bg-vinyl-inner: #1a110a;
+
+  --text-primary: #3b2718;
+  --text-secondary: #7a5c45;
+  --text-muted: #a8907a;
+  --text-on-active: #4a3425;
+
+  --accent-primary: #a67c52;
+  --accent-secondary: #c49a6c;
+  --accent-glow: rgba(166, 124, 82, 0.3);
+  --accent-button: #a67c52;
+
+  --border-color: #e6dcd0;
+  --border-active: #a67c52;
+
+  --shadow-sm: 0 2px 8px rgba(60, 40, 20, 0.06);
+  --shadow-md: 0 4px 16px rgba(60, 40, 20, 0.08);
+  --shadow-lg: 0 8px 32px rgba(60, 40, 20, 0.1);
+  --shadow-vinyl: 0 0 60px rgba(44, 30, 20, 0.35);
+
+  --slider-thumb-shadow: 0 2px 6px rgba(60, 40, 20, 0.18);
+  --tab-border: 1px solid #ddd0c2;
+  --tab-active-bg: #f5ebe0;
+  --playlist-active-gradient: linear-gradient(135deg, #f5ebe0 0%, #faecd8 100%);
+  --mode-button-bg: #f0e6da;
+  --mode-button-text: #7a5c45;
+}
+
+[data-theme="disco"] {
+  --bg-primary: #1a0a2e;
+  --bg-secondary: #0d0520;
+  --bg-panel: rgba(30, 15, 60, 0.85);
+  --bg-panel-hover: rgba(50, 25, 90, 0.6);
+  --bg-active: linear-gradient(
+    135deg,
+    rgba(108, 99, 255, 0.3) 0%,
+    rgba(200, 50, 255, 0.25) 100%
+  );
+  --bg-slider-track: rgba(100, 80, 180, 0.3);
+  --bg-slider-fill: linear-gradient(180deg, #9b59f7 0%, #6c63ff 100%);
+  --bg-slider-thumb: #ffffff;
+  --bg-vinyl-outer: #0a0a1a;
+  --bg-vinyl-inner: #050510;
+
+  --text-primary: #f0e6ff;
+  --text-secondary: #b8a0e0;
+  --text-muted: #7a60a0;
+  --text-on-active: #e0d0ff;
+
+  --accent-primary: #9b59f7;
+  --accent-secondary: #c840ff;
+  --accent-glow: rgba(155, 89, 247, 0.5);
+  --accent-button: #9b59f7;
+
+  --border-color: rgba(155, 89, 247, 0.2);
+  --border-active: #9b59f7;
+
+  --shadow-sm: 0 2px 8px rgba(155, 89, 247, 0.1);
+  --shadow-md: 0 4px 16px rgba(155, 89, 247, 0.15);
+  --shadow-lg: 0 8px 32px rgba(155, 89, 247, 0.2);
+  --shadow-vinyl:
+    0 0 80px rgba(155, 89, 247, 0.3), 0 0 120px rgba(200, 64, 255, 0.15);
+
+  --slider-thumb-shadow: 0 0 10px rgba(155, 89, 247, 0.6);
+  --tab-border: 1px solid rgba(155, 89, 247, 0.3);
+  --tab-active-bg: rgba(155, 89, 247, 0.15);
+  --playlist-active-gradient: linear-gradient(
+    135deg,
+    rgba(155, 89, 247, 0.3) 0%,
+    rgba(200, 64, 255, 0.2) 100%
+  );
+  --mode-button-bg: rgba(155, 89, 247, 0.2);
+  --mode-button-text: #c8a0ff;
+}
+
+[data-theme="focus"] {
+  /* Focus Mode — Deep Navy / Teal for concentration 🎯 */
+  --bg-primary: #0f1a2e;
+  --bg-secondary: #0a1222;
+  --bg-panel: rgba(15, 30, 55, 0.9);
+  --bg-panel-hover: rgba(30, 80, 120, 0.25);
+  --bg-active: linear-gradient(
+    135deg,
+    rgba(40, 120, 180, 0.25) 0%,
+    rgba(30, 160, 160, 0.2) 100%
+  );
+  --bg-slider-track: rgba(40, 80, 130, 0.35);
+  --bg-slider-fill: linear-gradient(180deg, #2e9bac 0%, #2878b4 100%);
+  --bg-slider-thumb: #e8f4f8;
+  --bg-vinyl-outer: #081020;
+  --bg-vinyl-inner: #040810;
+
+  --text-primary: #dceef8;
+  --text-secondary: #8cb8d4;
+  --text-muted: #4d7a99;
+  --text-on-active: #c8e0f0;
+
+  --accent-primary: #2e9bac;
+  --accent-secondary: #40c4c0;
+  --accent-glow: rgba(46, 155, 172, 0.4);
+  --accent-button: #2e9bac;
+
+  --border-color: rgba(46, 155, 172, 0.2);
+  --border-active: #2e9bac;
+
+  --shadow-sm: 0 2px 8px rgba(20, 60, 100, 0.15);
+  --shadow-md: 0 4px 16px rgba(20, 60, 100, 0.2);
+  --shadow-lg: 0 8px 32px rgba(20, 60, 100, 0.25);
+  --shadow-vinyl:
+    0 0 60px rgba(46, 155, 172, 0.25), 0 0 100px rgba(40, 120, 180, 0.1);
+
+  --slider-thumb-shadow: 0 0 8px rgba(46, 155, 172, 0.5);
+  --tab-border: 1px solid rgba(46, 155, 172, 0.25);
+  --tab-active-bg: rgba(46, 155, 172, 0.15);
+  --playlist-active-gradient: linear-gradient(
+    135deg,
+    rgba(46, 155, 172, 0.25) 0%,
+    rgba(40, 196, 192, 0.15) 100%
+  );
+  --mode-button-bg: rgba(46, 155, 172, 0.2);
+  --mode-button-text: #8cd4e0;
+}
+
+[data-theme="eco"] {
+  /* Eco Mode — Natural Greens / Earth palette 🌿 */
+  --bg-primary: #0f1f14;
+  --bg-secondary: #0a1810;
+  --bg-panel: rgba(15, 35, 22, 0.9);
+  --bg-panel-hover: rgba(40, 100, 60, 0.25);
+  --bg-active: linear-gradient(
+    135deg,
+    rgba(50, 140, 80, 0.25) 0%,
+    rgba(80, 160, 60, 0.2) 100%
+  );
+  --bg-slider-track: rgba(40, 90, 50, 0.35);
+  --bg-slider-fill: linear-gradient(180deg, #3da85e 0%, #2d8a4e 100%);
+  --bg-slider-thumb: #eaf5ec;
+  --bg-vinyl-outer: #081808;
+  --bg-vinyl-inner: #040e04;
+
+  --text-primary: #ddf0dc;
+  --text-secondary: #8ec498;
+  --text-muted: #4d8a58;
+  --text-on-active: #c0e8c4;
+
+  --accent-primary: #3da85e;
+  --accent-secondary: #5cc878;
+  --accent-glow: rgba(61, 168, 94, 0.4);
+  --accent-button: #3da85e;
+
+  --border-color: rgba(61, 168, 94, 0.2);
+  --border-active: #3da85e;
+
+  --shadow-sm: 0 2px 8px rgba(20, 60, 30, 0.15);
+  --shadow-md: 0 4px 16px rgba(20, 60, 30, 0.2);
+  --shadow-lg: 0 8px 32px rgba(20, 60, 30, 0.25);
+  --shadow-vinyl:
+    0 0 60px rgba(61, 168, 94, 0.25), 0 0 100px rgba(45, 138, 78, 0.1);
+
+  --slider-thumb-shadow: 0 0 8px rgba(61, 168, 94, 0.5);
+  --tab-border: 1px solid rgba(61, 168, 94, 0.25);
+  --tab-active-bg: rgba(61, 168, 94, 0.15);
+  --playlist-active-gradient: linear-gradient(
+    135deg,
+    rgba(61, 168, 94, 0.25) 0%,
+    rgba(92, 200, 120, 0.15) 100%
+  );
+  --mode-button-bg: rgba(61, 168, 94, 0.2);
+  --mode-button-text: #8cd4a0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background 0.5s ease,
+    color 0.4s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
