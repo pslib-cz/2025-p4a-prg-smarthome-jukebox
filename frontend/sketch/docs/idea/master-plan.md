@@ -1,32 +1,52 @@
 # HAJukeBox Master Plan
 
-Last updated: 2026-03-19
-Status: Draft v1
+Last updated: 2026-03-20
+Status: Draft v1.1
 
 ## Context Note
 - This plan was built from the current repository, recent frontend state, and technical decisions discussed in chat.
 - `docs/idea/idea-1.md`, `docs/idea/idea-2.md`, and `docs/assignment/assignment.md` were empty at the time of writing.
 - Final alignment against the original Notion notes and the exact school brief is still pending.
+- Confirmed constraints from the team:
+  - exactly `1x ESP32`
+  - `Google Assistant` is welcome, but not required for baseline success
+  - `Local MP3` is the main mandatory playback path
+  - `Spotify` is a bonus / nice-to-have feature
+  - the team wants `Spotify` and `local MP3` to end up on the same speaker path if possible
+
+## Assignment Compliance Correction
+The school assignment adds one important baseline constraint:
+- Home Assistant must remain the central system
+- The required dashboard/client should work without depending on an external custom server or database as the primary runtime backbone
+
+Practical interpretation for this project:
+- `Baseline architecture`: frontend talks directly to Home Assistant and/or MQTT over WebSockets for required functionality
+- `Optional extension`: a dedicated local server may still exist later for bonus features, but it must not become a hidden hard dependency for the core assignment flow
+
+This matters most for frontend planning:
+- real data preparation should start with `HA-backed contracts`
+- `local MP3 + telemetry + control` should be implementable with HA as the primary integration point
+- Spotify and any extra backend layer should be treated as an extension after the baseline flow works
 
 ## Executive Summary
-HAJukeBox should be built as a multi-layer local smart jukebox system with a strong visual frontend, a local application server, Home Assistant for automation and device orchestration, and one or more ESP32 nodes for physical sensing and actuator control.
+HAJukeBox should be built as a multi-layer local smart jukebox system with a strong visual frontend, a local application server, Home Assistant for automation and device orchestration, and one ESP32 node for physical sensing and actuator control.
 
 The project should support two media paths:
 - `Local MP3 path`: fully owned playback path that we control end to end
-- `Spotify path`: browser playback through Spotify Web Playback SDK, with metadata, state, and control exposed into the same HAJukeBox UI and automation model
+- `Spotify path`: browser playback through Spotify Web Playback SDK, with metadata, state, and control exposed into the same HAJukeBox UI and automation model as a bonus path
 
 The recommended architecture is:
 - `Frontend`: visual UI, user controls, browser-side Spotify player host, live telemetry presentation
-- `Local server`: media orchestration, auth/session hub, local library, real-time state API, event log aggregation
-- `Home Assistant`: automations, entity state, Google Assistant path, MQTT broker integration, room/device logic
+- `Home Assistant`: required central automation/runtime system, entity state, MQTT broker integration, room/device logic
 - `ESP32`: raw sensor acquisition and hardware actuation, not business-logic orchestration
+- `Optional local server`: only if later needed for bonus media features beyond the HA-centered baseline
 
 ## Project Goals
 1. Deliver a music-first interface that still proves monitoring, automation, and logging quality.
-2. Keep local MP3 playback as the reliable baseline path.
-3. Add Spotify through the officially supported browser playback path.
+2. Deliver local MP3 playback as the reliable required baseline path.
+3. Add Spotify through the officially supported browser playback path if time and hardware reality allow it.
 4. Integrate room presence and interaction sensors through ESP32 and MQTT.
-5. Make Google Assistant a trigger path into the system, not the central application runtime.
+5. Treat Google Assistant as a bonus trigger path into the system, not the central application runtime.
 6. Keep the whole system understandable enough for a 3-person team.
 
 ## Non-Negotiable Decisions
@@ -36,6 +56,9 @@ The recommended architecture is:
 4. The local server should own media state and session coordination.
 5. ESP32 should publish sensor data and execute commands, but not decide system behavior on its own.
 6. MQTT should be the shared event bus between ESP32, Home Assistant, and the local server.
+7. Google Assistant is a bonus integration path, not a baseline delivery blocker.
+8. Local MP3 playback is the baseline success criterion for the media layer.
+9. Spotify integration is valuable, but it must not jeopardize the required local MP3 path.
 
 ## System Ownership
 
@@ -103,14 +126,12 @@ Recommended role:
 
 Recommended warning:
 - One ESP32 doing speaker output, microphone sampling, ultrasonic ranging, MQTT, and other logic may become unstable
-- If this gets unreliable, split into:
-  - `ESP32-sensor node`
-  - `ESP32-audio node`
+- Because the current team constraint is `1x ESP32`, the first fallback should be moving the main audio host away from the ESP, not adding another board unless scope changes
 
 ## Media Strategy
 
 ### Local MP3 Path
-This should be the primary reliable demo path.
+This is the primary required demo path.
 
 Flow:
 1. Frontend requests local library from the local server.
@@ -123,9 +144,10 @@ Why this path matters:
 - Full control over files and metadata
 - No premium-account dependency
 - Easier fallback if Spotify or network paths fail
+- It is the required media feature even if bonus integrations slip
 
 ### Spotify Path
-Spotify should use Web Playback SDK in the browser.
+Spotify should use Web Playback SDK in the browser if this bonus path is implemented.
 
 Flow:
 1. User authenticates Spotify.
@@ -140,6 +162,25 @@ Important technical facts:
 - Web Playback SDK requires Spotify Premium
 - The browser must be alive and registered as the playback device
 - The ESP32 should not be expected to decode Spotify audio from the normal Web API
+
+### Audio Output Reality Check
+The team wants Spotify and local MP3 to play through the same ESP-related speaker setup. That is a valid product goal, but it needs a realistic interpretation.
+
+What is safe to promise:
+- Local MP3 can target an ESP-managed speaker path if the firmware/audio path is stable
+- Spotify can be controlled and rendered through Web Playback SDK in the browser
+- The whole system can still expose one unified UI, one mode system, and one automation model
+
+What is not safe to promise as a baseline:
+- One ESP32 directly decoding Spotify audio from the standard Spotify APIs while also handling mic, ultrasonic, MQTT, and other tasks
+
+Recommended interpretation:
+- `Baseline path`: Spotify plays in the browser host, local MP3 can use the ESP-attached audio path if stable
+- `Unified product feel`: the UI, logs, commands, and automations treat both sources as one jukebox
+- `Stretch goal`: make both sources converge onto the exact same physical speaker path if hardware tests prove it is stable
+
+Because Spotify is currently a bonus feature, this whole path should be attempted only after the local MP3 path is stable.
+If the school demo absolutely requires Spotify audio to come out of the ESP-attached speaker, that becomes a dedicated technical risk item and should not be hidden inside the baseline schedule.
 
 ## Voice and Google Assistant Strategy
 
@@ -168,7 +209,7 @@ If Google integration becomes too heavy:
 - Use Home Assistant Assist for local voice
 - Or use browser microphone + Web Speech as a sketch/demo fallback
 
-Google Assistant should enhance the project, not block the whole delivery.
+Google Assistant should enhance the project, not block the whole delivery. In the current plan it is a bonus, not a hard dependency.
 
 ## End-to-End Data Flows
 
@@ -187,6 +228,10 @@ Google Assistant should enhance the project, not block the whole delivery.
 5. Frontend receives SDK state events
 6. Frontend forwards state snapshots to the local server if needed
 7. Local server publishes unified media state to HA and UI
+
+Output note:
+- Baseline assumption: Spotify audio is physically emitted by the browser host playback device
+- System goal: the user should still experience this as one HAJukeBox source, even if the hardware output path differs internally
 
 ### Flow C: Sensor Automation
 1. ESP32 publishes sensor event to MQTT
@@ -305,10 +350,9 @@ Minimum target hardware:
 Hardware warning:
 - Audio output, microphone capture, ultrasonic timing, and network traffic on one board can interfere with each other
 - Freeze hardware pin plan early
-- Decide early whether the speaker is:
-  - demo-only
-  - true local music output
-  - secondary sound effect output
+- Treat the ESP-attached speaker path as `local playback first`
+- Treat `Spotify through the same exact ESP speaker path` as a high-risk integration until proven in hardware
+- If the single-board design becomes unstable, move the Spotify audio host off the ESP before changing the rest of the architecture
 
 ## Logging and Monitoring Plan
 
@@ -359,6 +403,7 @@ Done when:
 - Local server indexes local songs
 - Frontend can browse and play local tracks
 - State updates and logs work end to end
+- This phase is mandatory for baseline project success
 
 ### Phase 3: ESP32 + MQTT Vertical Slice
 Done when:
@@ -366,14 +411,15 @@ Done when:
 - Health telemetry is visible in frontend
 - At least one automation is triggered by sensors
 
-### Phase 4: Spotify Vertical Slice
+### Phase 4: Optional Spotify Vertical Slice
 Done when:
 - Spotify auth works
 - Browser becomes a playable Spotify device
 - Frontend shows true Spotify playback state
 - Logs and source badges distinguish Spotify from local
+- The team explicitly verifies whether this is enough for the required demo, or whether same-speaker-path output must be escalated into an extra milestone
 
-### Phase 5: Google Assistant Path
+### Phase 5: Optional Google Assistant Path
 Done when:
 - One voice command successfully triggers one HA automation
 - HA automation controls the media path
@@ -424,24 +470,27 @@ Integration checkpoints:
 4. If the browser is closed, Spotify playback control path must fail gracefully.
 5. Frontend-only playback logic will become messy fast; use the local server as the coordination hub.
 6. If the hardware audio path becomes unstable, local MP3 playback should still be able to demo from browser or local server fallback.
+7. `Spotify through one ESP32-attached speaker` is the main unresolved hardware-risk requirement.
+8. The team should finish and stabilize the local MP3 path before attempting Spotify or Google Assistant.
 
-## Demo Definition Of Done
-The project is demo-ready when all of the following are true:
+## Baseline Definition Of Done
+The baseline project is demo-ready when all of the following are true:
 - Local MP3 playback works from the HAJukeBox UI
-- Spotify playback works through Web Playback SDK
-- Source switching is visible and clear
 - Telemetry deck shows real sensor and health data
 - At least two sensor-driven automations work
-- At least one voice-triggered flow works
 - Raw and human-readable logs both exist
 - The team can explain where each subsystem starts and ends
 
+## Bonus Definition Of Done
+These are stretch outcomes, not baseline blockers:
+- Spotify playback works through Web Playback SDK
+- Source switching between local and Spotify is visible and clear
+- At least one voice-triggered flow works through Google Assistant or a fallback voice path
+
 ## Open Questions
 These need answers before the plan is final:
-- Must Spotify audio physically come out of the ESP32-attached speaker, or can Spotify stay browser-based while ESP32 handles sensors and control?
-- Is Google Assistant mandatory for grading, or a strong bonus?
-- Are multiple ESP32 boards allowed?
 - Will the demo environment allow external HTTPS access if required for some integrations?
+- Does `Spotify through ESP` mean the exact same physical speaker output, or is it acceptable if Spotify stays browser-hosted while the ESP remains the room-control node?
 - Do you want Home Assistant to be the visible automation brain, or should most logic stay hidden behind the local server?
 - Do you want local voice fallback included if Google Assistant slips?
 

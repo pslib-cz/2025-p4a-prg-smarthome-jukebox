@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import "./App.css";
 import "./AppShell.css";
 import "./components/HeroStage.css";
@@ -9,10 +9,8 @@ import PlaylistItem from "./components/PlaylistItem";
 import DiscoParticles from "./components/DiscoParticles";
 import SignalBay from "./components/SignalBay";
 import {
-  AUDIO_STATUS_BASE,
   DSP_PRESETS,
-  PLAYLISTS,
-  SONGS,
+  isDspProfileKey,
   type DspProfileKey,
 } from "./appSketchData";
 import {
@@ -33,50 +31,55 @@ import {
   FocusIcon,
   EcoIcon,
 } from "./components/Icons";
+import { useJukebox } from "./state/useJukebox";
 
 const THEMES = ["casual", "disco", "focus", "eco"] as const;
 type Theme = (typeof THEMES)[number];
 
+const DEFAULT_DSP_PROFILE: DspProfileKey = "Vocal Clarity";
+const INITIAL_DSP_VALUES = DSP_PRESETS[DEFAULT_DSP_PROFILE];
+
 export default function App() {
+  const { state, sendCommand } = useJukebox();
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const signalBayRef = useRef<HTMLElement | null>(null);
-  const [theme, setTheme] = useState<Theme>("casual");
   const [activeTab, setActiveTab] = useState<"mixer" | "effects">("mixer");
   const [rightTab, setRightTab] = useState<"playlist" | "songs">("songs");
-  const [spotifyConnected, setSpotifyConnected] = useState(false);
-  const [activeSongId, setActiveSongId] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(35);
   const [songInfoView, setSongInfoView] = useState<"credits" | "audio">(
     "credits",
   );
-  const [activeDspProfile, setActiveDspProfile] =
-    useState<DspProfileKey>("Vocal Clarity");
 
-  // Mixer faders
-  const [volume, setVolume] = useState(75);
   const [bass, setBass] = useState(50);
   const [treble, setTreble] = useState(50);
 
-  // Effects
-  const [reverb, setReverb] = useState(30);
-  const [echo, setEcho] = useState(15);
-  const [delay, setDelay] = useState(20);
-  const [distortion, setDistortion] = useState(0);
-  const [flanger, setFlanger] = useState(10);
-  const [chorus, setChorus] = useState(25);
+  const [reverb, setReverb] = useState<number>(INITIAL_DSP_VALUES.reverb);
+  const [echo, setEcho] = useState<number>(INITIAL_DSP_VALUES.echo);
+  const [delay, setDelay] = useState<number>(INITIAL_DSP_VALUES.delay);
+  const [distortion, setDistortion] = useState<number>(
+    INITIAL_DSP_VALUES.distortion,
+  );
+  const [flanger, setFlanger] = useState<number>(INITIAL_DSP_VALUES.flanger);
+  const [chorus, setChorus] = useState<number>(INITIAL_DSP_VALUES.chorus);
   const [spinSpeed, setSpinSpeed] = useState(30);
+
+  const theme = state.theme;
+  const isPlaying = state.media.isPlaying;
+  const progress = state.media.progressPercent;
+  const volume = state.media.volumePercent;
+  const spotifyConnected = state.media.spotifyConnected;
+  const activeSongId = state.media.activeTrackId;
+  const activeSong = state.media.activeTrack;
+  const activeDspProfile = isDspProfileKey(state.media.audio.dspProfile)
+    ? state.media.audio.dspProfile
+    : DEFAULT_DSP_PROFILE;
 
   const spinDuration = spinSpeed === 0 ? 0 : 12 - (spinSpeed / 100) * 10.8;
 
-  const activeSong = SONGS.find((s) => s.id === activeSongId) || SONGS[0];
-
   const toggleTheme = useCallback(() => {
-    setTheme((t) => {
-      const idx = THEMES.indexOf(t);
-      return THEMES[(idx + 1) % THEMES.length];
-    });
-  }, []);
+    const idx = THEMES.indexOf(theme);
+    const nextTheme = THEMES[(idx + 1) % THEMES.length];
+    void sendCommand({ type: "set_theme", theme: nextTheme });
+  }, [sendCommand, theme]);
 
   const THEME_CONFIG: Record<Theme, { icon: React.ReactNode; label: string }> =
     {
@@ -87,62 +90,60 @@ export default function App() {
     };
 
   const togglePlay = useCallback(() => {
-    setIsPlaying((p) => !p);
-  }, []);
+    void sendCommand({ type: isPlaying ? "pause" : "play" });
+  }, [isPlaying, sendCommand]);
 
   const toggleSongInfoView = useCallback(() => {
     setSongInfoView((view) => (view === "credits" ? "audio" : "credits"));
   }, []);
 
-  const applyDspProfile = useCallback((profile: DspProfileKey) => {
-    const preset = DSP_PRESETS[profile];
+  const applyDspProfile = useCallback(
+    (profile: DspProfileKey) => {
+      const preset = DSP_PRESETS[profile];
 
-    setActiveDspProfile(profile);
-    setReverb(preset.reverb);
-    setEcho(preset.echo);
-    setDelay(preset.delay);
-    setDistortion(preset.distortion);
-    setFlanger(preset.flanger);
-    setChorus(preset.chorus);
-  }, []);
+      setReverb(preset.reverb);
+      setEcho(preset.echo);
+      setDelay(preset.delay);
+      setDistortion(preset.distortion);
+      setFlanger(preset.flanger);
+      setChorus(preset.chorus);
+      void sendCommand({ type: "set_dsp_profile", profile });
+    },
+    [sendCommand],
+  );
 
   const prevSong = useCallback(() => {
-    setActiveSongId((id) => {
-      const idx = SONGS.findIndex((s) => s.id === id);
-      const prevIdx = idx <= 0 ? SONGS.length - 1 : idx - 1;
-      return SONGS[prevIdx].id;
-    });
-  }, []);
+    void sendCommand({ type: "previous" });
+  }, [sendCommand]);
 
   const nextSong = useCallback(() => {
-    setActiveSongId((id) => {
-      const idx = SONGS.findIndex((s) => s.id === id);
-      const nextIdx = idx >= SONGS.length - 1 ? 0 : idx + 1;
-      return SONGS[nextIdx].id;
-    });
-  }, []);
+    void sendCommand({ type: "next" });
+  }, [sendCommand]);
 
-  const handleProgressDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const target = e.currentTarget as HTMLElement;
+  const handleProgressDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const target = e.currentTarget as HTMLElement;
 
-    const updateProgress = (clientX: number) => {
-      const rect = target.getBoundingClientRect();
-      const relX = clientX - rect.left;
-      const pct = Math.max(0, Math.min(100, (relX / rect.width) * 100));
-      setProgress(Math.round(pct));
-    };
+      const updateProgress = (clientX: number) => {
+        const rect = target.getBoundingClientRect();
+        const relX = clientX - rect.left;
+        const pct = Math.max(0, Math.min(100, (relX / rect.width) * 100));
+        void sendCommand({ type: "seek", progressPercent: pct });
+      };
 
-    updateProgress(e.clientX);
+      updateProgress(e.clientX);
 
-    const handleMouseMove = (ev: MouseEvent) => updateProgress(ev.clientX);
-    const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  }, []);
+      const handleMouseMove = (ev: MouseEvent) => updateProgress(ev.clientX);
+      const handleMouseUp = () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [sendCommand],
+  );
 
   const openSignalBay = useCallback(() => {
     const appShell = appShellRef.current;
@@ -166,15 +167,14 @@ export default function App() {
   }, []);
 
   const audioStatus = {
-    primary: AUDIO_STATUS_BASE.primary,
-    secondary: `${AUDIO_STATUS_BASE.source} · ${activeDspProfile}`,
+    primary: state.media.audio.quality,
+    secondary: `${state.media.audio.codec} · ${activeDspProfile}`,
   };
 
   return (
     <div className="app-shell" data-theme={theme} ref={appShellRef}>
       <section className="hero-screen">
         <div className="app" data-theme={theme}>
-          {/* LEFT PANEL - DJ CONTROLS */}
           <div className="controls-panel">
             <h2 className="controls-title">Control panel</h2>
 
@@ -199,7 +199,12 @@ export default function App() {
                   icon={<VolumeIcon />}
                   label="Master"
                   value={volume}
-                  onChange={setVolume}
+                  onChange={(value) => {
+                    void sendCommand({
+                      type: "set_volume",
+                      volumePercent: value,
+                    });
+                  }}
                 />
                 <VerticalFader
                   icon={<BassIcon />}
@@ -221,11 +226,7 @@ export default function App() {
                   value={reverb}
                   onChange={setReverb}
                 />
-                <HorizontalSlider
-                  label="Echo"
-                  value={echo}
-                  onChange={setEcho}
-                />
+                <HorizontalSlider label="Echo" value={echo} onChange={setEcho} />
                 <HorizontalSlider
                   label="Delay"
                   value={delay}
@@ -259,16 +260,18 @@ export default function App() {
                   </div>
 
                   <div className="dsp-switch-list">
-                    {(Object.keys(DSP_PRESETS) as DspProfileKey[]).map((profile) => (
-                      <button
-                        key={profile}
-                        type="button"
-                        className={`dsp-switch ${activeDspProfile === profile ? "active" : ""}`}
-                        onClick={() => applyDspProfile(profile)}
-                      >
-                        {profile}
-                      </button>
-                    ))}
+                    {(Object.keys(DSP_PRESETS) as DspProfileKey[]).map(
+                      (profile) => (
+                        <button
+                          key={profile}
+                          type="button"
+                          className={`dsp-switch ${activeDspProfile === profile ? "active" : ""}`}
+                          onClick={() => applyDspProfile(profile)}
+                        >
+                          {profile}
+                        </button>
+                      ),
+                    )}
                   </div>
                 </div>
               </div>
@@ -281,12 +284,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* CENTER - VINYL + PLAYER */}
           <div className="center-area">
             {theme === "disco" && <DiscoParticles />}
 
             <VinylRecord
-              coverUrl={activeSong.cover}
+              coverUrl={activeSong.coverUrl}
               isPlaying={isPlaying}
               spinDuration={spinDuration}
               theme={theme}
@@ -365,7 +367,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* RIGHT PANEL - MUSIC LIBRARY */}
           <div className="playlist-panel">
             <div className="playlist-header">
               <div className="playlist-title-group">
@@ -378,7 +379,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Right panel tabs */}
             <div className="tabs right-tabs">
               <button
                 className={`tab ${rightTab === "songs" ? "active" : ""}`}
@@ -396,15 +396,20 @@ export default function App() {
 
             {rightTab === "songs" ? (
               <div className="playlist-list">
-                {SONGS.map((song) => (
+                {state.library.songs.map((song) => (
                   <PlaylistItem
                     key={song.id}
                     title={song.title}
                     artist={song.artist}
                     duration={song.duration}
-                    coverUrl={song.cover}
+                    coverUrl={song.coverUrl}
                     isActive={song.id === activeSongId}
-                    onClick={() => setActiveSongId(song.id)}
+                    onClick={() => {
+                      void sendCommand({
+                        type: "play_track",
+                        trackId: song.id,
+                      });
+                    }}
                   />
                 ))}
               </div>
@@ -417,13 +422,15 @@ export default function App() {
                   </button>
                 )}
                 <div className="playlist-list">
-                  {PLAYLISTS.map((pl) => (
-                    <div key={pl.id} className="playlist-card">
-                      <span className="playlist-card-icon">{pl.icon}</span>
+                  {state.library.playlists.map((playlist) => (
+                    <div key={playlist.id} className="playlist-card">
+                      <span className="playlist-card-icon">{playlist.icon}</span>
                       <div className="playlist-card-info">
-                        <div className="playlist-card-name">{pl.name}</div>
+                        <div className="playlist-card-name">
+                          {playlist.name}
+                        </div>
                         <div className="playlist-card-count">
-                          {pl.songCount} songs
+                          {playlist.songCount} songs
                         </div>
                       </div>
                       <span className="playlist-card-arrow">›</span>
@@ -433,11 +440,15 @@ export default function App() {
               </div>
             )}
 
-            {/* Spotify connect button */}
             <div className="spotify-section">
               <button
                 className={`btn-spotify ${spotifyConnected ? "connected" : ""}`}
-                onClick={() => setSpotifyConnected((c) => !c)}
+                onClick={() => {
+                  void sendCommand({
+                    type: "set_spotify_connection",
+                    connected: !spotifyConnected,
+                  });
+                }}
               >
                 <svg
                   className="spotify-logo"

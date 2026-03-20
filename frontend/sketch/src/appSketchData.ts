@@ -78,6 +78,10 @@ export const DSP_PRESETS = {
 
 export type DspProfileKey = keyof typeof DSP_PRESETS;
 
+export function isDspProfileKey(value: string): value is DspProfileKey {
+  return value in DSP_PRESETS;
+}
+
 export const AUDIO_STATUS_BASE = {
   primary: "320 kbps · High · Buffer 74%",
   source: "AAC stream · Local cache",

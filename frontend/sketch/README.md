@@ -1,73 +1,39 @@
-# React + TypeScript + Vite
+# HAJukeBox Frontend Sketch
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Stylized frontend prototype for a smart jukebox project built with `React`, `TypeScript`, and `Vite`.
 
-Currently, two official plugins are available:
+The current repository focus is:
+- preserve the music-console visual identity
+- prepare the UI for real `Home Assistant` and `MQTT` data
+- deliver `local MP3` as the baseline media path
+- treat `Spotify` and `Google Assistant` as bonus integrations
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Key Documents
 
-## React Compiler
+- Master plan: [MASTER-PLAN.md](./MASTER-PLAN.md)
+- Detailed architecture plan: [docs/idea/master-plan.md](./docs/idea/master-plan.md)
+- Frontend implementation plan: [docs/idea/frontend-implementation-plan.md](./docs/idea/frontend-implementation-plan.md)
+- Progress tracker: [docs/progress.md](./docs/progress.md)
+- Prioritized requirements: [docs/requirements.txt](./docs/requirements.txt)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Current Frontend Direction
 
-## Expanding the ESLint configuration
+- Left panel: mixer and effects controls
+- Center: vinyl player hero area
+- Right panel: songs, playlists, and source-related controls
+- Lower technical layer: `Telemetry Deck` for monitoring, logging, MQTT, and ESP32 health
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Local Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Useful commands:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run test
+npm run lint
+npm run build
 ```
