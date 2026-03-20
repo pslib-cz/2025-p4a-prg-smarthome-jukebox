@@ -1,63 +1,159 @@
+import type { CSSProperties } from "react";
 import "./SignalBay.css";
 import "./SignalBayPanels.css";
+import "./SignalBayTelemetry.css";
 import "./SignalBayMotion.css";
+import {
+  AUDIO_TELEMETRY,
+  AUTOMATION_LANES,
+  BUFFER_LEVELS,
+  CLAP_TRACE,
+  DISTANCE_SERIES,
+  DISTANCE_SUMMARY,
+  DSP_PROFILES,
+  EVENT_TAPE,
+  MQTT_FEED,
+  MQTT_TOPICS,
+  PRESENCE_CONFIDENCE,
+  PRESENCE_REASON,
+  ROOM_MARKERS,
+  ROOM_READOUTS,
+  SIGNAL_LEVELS,
+  SUMMARY_CHIPS,
+  SYSTEM_HEALTH,
+} from "./signalBayData";
 
 interface SignalBayProps {
   onClose: () => void;
+  activeDspProfile: string;
 }
 
-const SIGNAL_LEVELS = [
-  { label: "Room", value: 74 },
-  { label: "Links", value: 91 },
-  { label: "Logs", value: 63 },
-];
+const CHART_WIDTH = 360;
+const CHART_HEIGHT = 180;
+const CHART_PADDING_X = 18;
+const CHART_PADDING_Y = 20;
 
-const ROOM_MARKERS = [
-  { id: "entry", label: "Entry lane", angle: -34, radius: 126, tone: "accent" },
-  { id: "presence", label: "Presence lock", angle: 28, radius: 82, tone: "good" },
-  { id: "clap", label: "Clap echo", angle: 126, radius: 58, tone: "soft" },
-];
+function buildLinePoints() {
+  const values = DISTANCE_SERIES.map((point) => point.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const range = maxValue - minValue || 1;
+  const usableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
+  const usableHeight = CHART_HEIGHT - CHART_PADDING_Y * 2;
 
-const ROOM_READOUTS = [
-  { label: "Visitor range", value: "42 cm" },
-  { label: "Presence fusion", value: "Locked" },
-  { label: "Ambient spill", value: "Low" },
-  { label: "Clap window", value: "2 peaks" },
-];
+  return DISTANCE_SERIES.map((point, index) => {
+    const x =
+      CHART_PADDING_X +
+      (usableWidth * index) / Math.max(DISTANCE_SERIES.length - 1, 1);
+    const normalized = (point.value - minValue) / range;
+    const y = CHART_HEIGHT - CHART_PADDING_Y - normalized * usableHeight;
 
-const LINK_RACK = [
-  { label: "MQTT bus", value: "18 ms", status: "Stable", tone: "good" },
-  { label: "SSL tunnel", value: "TLS 1.3", status: "Secured", tone: "accent" },
-  { label: "ESP32 node", value: "Online", status: "Pulse live", tone: "good" },
-  { label: "Spotify sync", value: "Placeholder", status: "Soft linked", tone: "soft" },
-];
+    return { ...point, x, y };
+  });
+}
 
-const MODE_MEMORY = [
-  { name: "Focus", stamp: "19:39", note: "Low chatter / low glare", color: "#7fb8ff" },
-  { name: "Casual", stamp: "19:12", note: "Open room / warm mix", color: "#d3a36b" },
-  { name: "Party", stamp: "18:54", note: "Clap lock / neon spill", color: "#d86fff" },
-];
+function PresenceGauge() {
+  return (
+    <div className="presence-gauge-card">
+      <div
+        className="presence-gauge"
+        style={
+          {
+            "--presence-value": `${PRESENCE_CONFIDENCE}%`,
+          } as CSSProperties
+        }
+      >
+        <div className="presence-gauge-inner">
+          <strong>{PRESENCE_CONFIDENCE}%</strong>
+          <span>Presence</span>
+        </div>
+      </div>
 
-const CLAP_TRACE = [18, 26, 34, 42, 58, 81, 96, 74, 40, 22, 16, 30, 56, 84, 100, 76, 44, 24];
+      <div className="presence-gauge-copy">
+        <span className="presence-gauge-label">Fusion confidence</span>
+        <strong>{PRESENCE_REASON}</strong>
+        <p>ESP32 presence score is promoted only after the mobile beacon and distance lane agree.</p>
+      </div>
+    </div>
+  );
+}
 
-const EVENT_TAPE = [
-  { time: "19:42:06", action: "Double clap pulse registered", meta: "Threshold 0.82" },
-  { time: "19:41:54", action: "Presence fusion held for 12 s", meta: "42 cm front lock" },
-  { time: "19:41:20", action: "Mode memory saved as Focus", meta: "Warm deck" },
-  { time: "19:40:48", action: "MQTT heartbeat refreshed", meta: "Bus clean" },
-];
+function DistanceChart() {
+  const chartPoints = buildLinePoints();
+  const linePoints = chartPoints.map((point) => `${point.x},${point.y}`).join(" ");
+  const areaPoints = [
+    `${CHART_PADDING_X},${CHART_HEIGHT - CHART_PADDING_Y}`,
+    ...chartPoints.map((point) => `${point.x},${point.y}`),
+    `${CHART_WIDTH - CHART_PADDING_X},${CHART_HEIGHT - CHART_PADDING_Y}`,
+  ].join(" ");
 
-export default function SignalBay({ onClose }: SignalBayProps) {
+  return (
+    <div className="distance-chart-shell">
+      <svg
+        className="distance-chart"
+        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+        role="img"
+        aria-label="Distance over time chart"
+      >
+        {Array.from({ length: 4 }, (_, index) => (
+          <line
+            key={`grid-${index}`}
+            className="distance-grid-line"
+            x1={CHART_PADDING_X}
+            x2={CHART_WIDTH - CHART_PADDING_X}
+            y1={CHART_PADDING_Y + (index * (CHART_HEIGHT - CHART_PADDING_Y * 2)) / 3}
+            y2={CHART_PADDING_Y + (index * (CHART_HEIGHT - CHART_PADDING_Y * 2)) / 3}
+          />
+        ))}
+
+        <polygon className="distance-area" points={areaPoints} />
+        <polyline className="distance-line" points={linePoints} />
+
+        {chartPoints.map((point, index) => (
+          <circle
+            key={`${point.time}-${point.value}`}
+            className={`distance-dot ${index === chartPoints.length - 1 ? "is-active" : ""}`}
+            cx={point.x}
+            cy={point.y}
+            r={index === chartPoints.length - 1 ? 5.5 : 4}
+          />
+        ))}
+      </svg>
+
+      <div className="distance-axis">
+        {DISTANCE_SERIES.map((point) => (
+          <span key={point.time}>{point.time}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BufferMeter() {
+  return (
+    <div className="buffer-meter" aria-label="Audio buffer level">
+      {BUFFER_LEVELS.map((level, index) => (
+        <span
+          key={`${level}-${index}`}
+          className={`buffer-meter-bar ${level >= 70 ? "is-stable" : ""}`}
+          style={{ height: `${level}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps) {
   return (
     <div className="signal-bay">
       <div className="signal-bay-frame">
         <div className="signal-bay-header">
           <div className="signal-bay-intro">
-            <span className="signal-bay-kicker">Secondary deck</span>
-            <h2 className="signal-bay-title">Signal Bay</h2>
+            <span className="signal-bay-kicker">Technical deck</span>
+            <h2 className="signal-bay-title">Telemetry Deck</h2>
             <p className="signal-bay-description">
-              Hidden room telemetry and system traces, styled as a backstage
-              service deck instead of a generic dashboard.
+              MQTT traffic, ESP32 health, presence fusion, and automation traces presented as the
+              backstage system layer of the jukebox.
             </p>
           </div>
 
@@ -66,13 +162,14 @@ export default function SignalBay({ onClose }: SignalBayProps) {
               type="button"
               className="signal-bay-close"
               onClick={onClose}
-              aria-label="Close Signal Bay"
+              aria-label="Close Telemetry Deck"
             >
               Close
             </button>
 
             <div className="signal-bay-summary">
-              <span className="signal-bay-badge">Sketch data live</span>
+              <span className="signal-bay-badge">P0 telemetry live</span>
+
               <div className="signal-bay-levels">
                 {SIGNAL_LEVELS.map((level) => (
                   <div key={level.label} className="signal-bay-level">
@@ -87,6 +184,14 @@ export default function SignalBay({ onClose }: SignalBayProps) {
                   </div>
                 ))}
               </div>
+
+              <div className="signal-bay-summary-chips">
+                {SUMMARY_CHIPS.map((chip) => (
+                  <span key={chip} className="signal-bay-summary-chip">
+                    {chip}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -95,10 +200,10 @@ export default function SignalBay({ onClose }: SignalBayProps) {
           <article className="bay-panel room-pulse-panel">
             <div className="bay-panel-head">
               <div>
-                <span className="bay-panel-kicker">Room Pulse</span>
-                <h3 className="bay-panel-title">Presence field</h3>
+                <span className="bay-panel-kicker">Presence Field</span>
+                <h3 className="bay-panel-title">Sensor fusion</h3>
               </div>
-              <span className="bay-panel-meta">42 cm lock</span>
+              <span className="bay-panel-meta">{PRESENCE_CONFIDENCE}% confidence</span>
             </div>
 
             <div className="room-pulse-layout">
@@ -134,113 +239,176 @@ export default function SignalBay({ onClose }: SignalBayProps) {
                 ))}
               </div>
 
-              <div className="room-pulse-readouts">
-                {ROOM_READOUTS.map((item) => (
-                  <div key={item.label} className="room-pulse-readout">
-                    <span className="room-pulse-readout-label">{item.label}</span>
-                    <strong className="room-pulse-readout-value">
-                      {item.value}
-                    </strong>
-                  </div>
-                ))}
+              <div className="room-pulse-stack">
+                <PresenceGauge />
+
+                <div className="room-pulse-readouts">
+                  {ROOM_READOUTS.map((item) => (
+                    <div key={item.label} className="room-pulse-readout">
+                      <span className="room-pulse-readout-label">{item.label}</span>
+                      <strong className="room-pulse-readout-value">{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </article>
 
-          <article className="bay-panel link-rack-panel">
+          <article className="bay-panel system-health-panel">
             <div className="bay-panel-head">
               <div>
-                <span className="bay-panel-kicker">Link Rack</span>
-                <h3 className="bay-panel-title">System lanes</h3>
+                <span className="bay-panel-kicker">System Health</span>
+                <h3 className="bay-panel-title">Broker and edge node</h3>
               </div>
-              <span className="bay-panel-meta">4 relays</span>
+              <span className="bay-panel-meta">Connected / TLS</span>
             </div>
 
-            <div className="link-rack-list">
-              {LINK_RACK.map((item) => (
-                <div
-                  key={item.label}
-                  className="link-rack-item"
-                  data-tone={item.tone}
-                >
-                  <span className="link-rack-led" />
-                  <div className="link-rack-copy">
-                    <span className="link-rack-label">{item.label}</span>
-                    <strong className="link-rack-value">{item.value}</strong>
+            <div className="system-health-list">
+              {SYSTEM_HEALTH.map((item) => (
+                <div key={item.label} className="system-health-item" data-tone={item.tone}>
+                  <span className="system-health-led" />
+                  <div className="system-health-copy">
+                    <span className="system-health-label">{item.label}</span>
+                    <strong className="system-health-value">{item.value}</strong>
                   </div>
-                  <span className="link-rack-status">{item.status}</span>
+                  <span className="system-health-status">{item.status}</span>
                 </div>
               ))}
             </div>
           </article>
 
-          <article className="bay-panel clap-trace-panel">
+          <article className="bay-panel distance-trace-panel">
             <div className="bay-panel-head">
               <div>
-                <span className="bay-panel-kicker">Clap Trace</span>
-                <h3 className="bay-panel-title">Transient capture</h3>
+                <span className="bay-panel-kicker">Distance Graph</span>
+                <h3 className="bay-panel-title">Approach timeline</h3>
               </div>
-              <span className="bay-panel-meta">Twin hit</span>
+              <span className="bay-panel-meta">10 samples</span>
             </div>
 
-            <div className="clap-trace-surface">
-              <div className="clap-trace-wave">
-                {CLAP_TRACE.map((bar, index) => (
-                  <span
-                    key={`${bar}-${index}`}
-                    className="clap-trace-bar"
-                    style={{
-                      height: `${bar}%`,
-                      animationDelay: `${index * 80}ms`,
-                    }}
-                  />
-                ))}
-              </div>
+            <DistanceChart />
 
-              <div className="clap-trace-meta">
-                <div className="clap-trace-meta-item">
-                  <span>Trigger</span>
-                  <strong>Double clap</strong>
+            <div className="distance-summary-grid">
+              {DISTANCE_SUMMARY.map((item) => (
+                <div key={item.label} className="distance-summary-card">
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
                 </div>
-                <div className="clap-trace-meta-item">
-                  <span>Decay</span>
-                  <strong>0.84 s</strong>
-                </div>
-                <div className="clap-trace-meta-item">
-                  <span>Noise floor</span>
-                  <strong>-28 dB</strong>
-                </div>
-              </div>
+              ))}
+            </div>
+
+            <div className="clap-trace-strip" aria-label="Clap activity trace">
+              {CLAP_TRACE.map((bar, index) => (
+                <span
+                  key={`${bar}-${index}`}
+                  className="clap-trace-bar"
+                  style={{
+                    height: `${bar}%`,
+                    animationDelay: `${index * 80}ms`,
+                  }}
+                />
+              ))}
             </div>
           </article>
 
-          <article className="bay-panel mode-memory-panel">
+          <article className="bay-panel mqtt-terminal-panel">
             <div className="bay-panel-head">
               <div>
-                <span className="bay-panel-kicker">Mode Memory</span>
-                <h3 className="bay-panel-title">Recent states</h3>
+                <span className="bay-panel-kicker">MQTT Live Feed</span>
+                <h3 className="bay-panel-title">Raw topic stream</h3>
               </div>
-              <span className="bay-panel-meta">3 recalls</span>
+              <span className="bay-panel-meta">Broker jitter 18 ms</span>
             </div>
 
-            <div className="mode-memory-list">
-              {MODE_MEMORY.map((mode) => (
-                <div key={mode.name} className="mode-memory-item">
-                  <span
-                    className="mode-memory-swatch"
-                    style={{
-                      backgroundColor: mode.color,
-                      boxShadow: `0 0 18px ${mode.color}`,
-                    }}
-                  />
-                  <div className="mode-memory-copy">
-                    <div className="mode-memory-row">
-                      <strong>{mode.name}</strong>
-                      <span>{mode.stamp}</span>
-                    </div>
-                    <p>{mode.note}</p>
+            <div className="mqtt-terminal">
+              <div className="mqtt-terminal-topbar">
+                <span className="mqtt-terminal-dot" />
+                broker://home/jukebox/edge
+              </div>
+
+              <div className="mqtt-terminal-body">
+                {MQTT_FEED.map((entry) => (
+                  <div key={`${entry.direction}-${entry.topic}`} className={`mqtt-line tone-${entry.tone}`}>
+                    <span className="mqtt-line-direction">[{entry.direction}]</span>
+                    <span className="mqtt-line-topic">{entry.topic}</span>
+                    <span className="mqtt-line-separator">:</span>
+                    <span className="mqtt-line-payload">{entry.payload}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mqtt-topic-strip">
+              {MQTT_TOPICS.map((topic) => (
+                <span key={topic} className="mqtt-topic-chip">
+                  {topic}
+                </span>
+              ))}
+            </div>
+          </article>
+
+          <article className="bay-panel automation-panel">
+            <div className="bay-panel-head">
+              <div>
+                <span className="bay-panel-kicker">Traceability</span>
+                <h3 className="bay-panel-title">Sensor to action lanes</h3>
+              </div>
+              <span className="bay-panel-meta">3 active rules</span>
+            </div>
+
+            <div className="automation-list">
+              {AUTOMATION_LANES.map((lane) => (
+                <div key={lane.source} className="automation-item">
+                  <div className="automation-step">
+                    <span>Input</span>
+                    <strong>{lane.source}</strong>
+                  </div>
+                  <span className="automation-arrow" aria-hidden="true">
+                    →
+                  </span>
+                  <div className="automation-step">
+                    <span>Fusion</span>
+                    <strong>{lane.fusion}</strong>
+                  </div>
+                  <span className="automation-arrow" aria-hidden="true">
+                    →
+                  </span>
+                  <div className="automation-step">
+                    <span>Output</span>
+                    <strong>{lane.action}</strong>
                   </div>
                 </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="bay-panel audio-pipeline-panel">
+            <div className="bay-panel-head">
+              <div>
+                <span className="bay-panel-kicker">Audio Telemetry</span>
+                <h3 className="bay-panel-title">Playback pipeline</h3>
+              </div>
+              <span className="bay-panel-meta">P1 technical</span>
+            </div>
+
+            <div className="audio-telemetry-grid">
+              {AUDIO_TELEMETRY.map((item) => (
+                <div key={item.label} className="audio-telemetry-card">
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  {item.label === "Buffer" ? <BufferMeter /> : null}
+                </div>
+              ))}
+            </div>
+
+            <div className="dsp-profile-strip">
+              {DSP_PROFILES.map((profile) => (
+                <span
+                  key={profile.label}
+                  className={`dsp-profile-chip ${profile.label === activeDspProfile ? "is-active" : ""}`}
+                >
+                  {profile.label}
+                </span>
               ))}
             </div>
           </article>
@@ -248,8 +416,8 @@ export default function SignalBay({ onClose }: SignalBayProps) {
           <article className="bay-panel event-tape-panel">
             <div className="bay-panel-head">
               <div>
-                <span className="bay-panel-kicker">Event Tape</span>
-                <h3 className="bay-panel-title">Recent actions</h3>
+                <span className="bay-panel-kicker">Event Log</span>
+                <h3 className="bay-panel-title">Human-readable actions</h3>
               </div>
               <span className="bay-panel-meta">Last 4 events</span>
             </div>

@@ -9,6 +9,13 @@ import PlaylistItem from "./components/PlaylistItem";
 import DiscoParticles from "./components/DiscoParticles";
 import SignalBay from "./components/SignalBay";
 import {
+  AUDIO_STATUS_BASE,
+  DSP_PRESETS,
+  PLAYLISTS,
+  SONGS,
+  type DspProfileKey,
+} from "./appSketchData";
+import {
   VolumeIcon,
   BassIcon,
   TrebleIcon,
@@ -30,57 +37,6 @@ import {
 const THEMES = ["casual", "disco", "focus", "eco"] as const;
 type Theme = (typeof THEMES)[number];
 
-const SONGS = [
-  {
-    id: 1,
-    title: "Neon Dreams",
-    artist: "Electric Waves",
-    album: "Digital Nights",
-    duration: "3:45",
-    cover: "/covers/neon-dreams.png",
-  },
-  {
-    id: 2,
-    title: "Midnight Groove",
-    artist: "The Vinyl Collective",
-    album: "After Hours",
-    duration: "4:12",
-    cover: "/covers/midnight-groove.png",
-  },
-  {
-    id: 3,
-    title: "Urban Rhythm",
-    artist: "Street Beats",
-    album: "City Pulse",
-    duration: "3:28",
-    cover: "/covers/urban-rhythm.png",
-  },
-  {
-    id: 4,
-    title: "Smooth Serenade",
-    artist: "Jazz Ensemble",
-    album: "Blue Notes",
-    duration: "5:03",
-    cover: "/covers/smooth-serenade.png",
-  },
-  {
-    id: 5,
-    title: "Thunder Road",
-    artist: "Rock Legends",
-    album: "Storm Rising",
-    duration: "4:50",
-    cover: "/covers/thunder-road.png",
-  },
-  {
-    id: 6,
-    title: "Sunset Boulevard",
-    artist: "Indie Hearts",
-    album: "Golden Hour",
-    duration: "3:55",
-    cover: "/covers/sunset-boulevard.png",
-  },
-];
-
 export default function App() {
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const signalBayRef = useRef<HTMLElement | null>(null);
@@ -91,6 +47,11 @@ export default function App() {
   const [activeSongId, setActiveSongId] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
+  const [songInfoView, setSongInfoView] = useState<"credits" | "audio">(
+    "credits",
+  );
+  const [activeDspProfile, setActiveDspProfile] =
+    useState<DspProfileKey>("Vocal Clarity");
 
   // Mixer faders
   const [volume, setVolume] = useState(75);
@@ -127,6 +88,22 @@ export default function App() {
 
   const togglePlay = useCallback(() => {
     setIsPlaying((p) => !p);
+  }, []);
+
+  const toggleSongInfoView = useCallback(() => {
+    setSongInfoView((view) => (view === "credits" ? "audio" : "credits"));
+  }, []);
+
+  const applyDspProfile = useCallback((profile: DspProfileKey) => {
+    const preset = DSP_PRESETS[profile];
+
+    setActiveDspProfile(profile);
+    setReverb(preset.reverb);
+    setEcho(preset.echo);
+    setDelay(preset.delay);
+    setDistortion(preset.distortion);
+    setFlanger(preset.flanger);
+    setChorus(preset.chorus);
   }, []);
 
   const prevSong = useCallback(() => {
@@ -188,12 +165,10 @@ export default function App() {
     });
   }, []);
 
-  // Placeholder playlists for sketch
-  const PLAYLISTS = [
-    { id: 1, name: "Chill Vibes", songCount: 12, icon: "🎧" },
-    { id: 2, name: "Night Drive", songCount: 8, icon: "🌙" },
-    { id: 3, name: "Workout Mix", songCount: 15, icon: "💪" },
-  ];
+  const audioStatus = {
+    primary: AUDIO_STATUS_BASE.primary,
+    secondary: `${AUDIO_STATUS_BASE.source} · ${activeDspProfile}`,
+  };
 
   return (
     <div className="app-shell" data-theme={theme} ref={appShellRef}>
@@ -222,7 +197,7 @@ export default function App() {
               <div className="sliders-container">
                 <VerticalFader
                   icon={<VolumeIcon />}
-                  label="Volume"
+                  label="Master"
                   value={volume}
                   onChange={setVolume}
                 />
@@ -276,12 +251,32 @@ export default function App() {
                   value={spinSpeed}
                   onChange={setSpinSpeed}
                 />
+
+                <div className="dsp-switch-group">
+                  <div className="dsp-switch-header">
+                    <span className="dsp-switch-kicker">DSP Profiles</span>
+                    <span className="dsp-switch-copy">Quick switches</span>
+                  </div>
+
+                  <div className="dsp-switch-list">
+                    {(Object.keys(DSP_PRESETS) as DspProfileKey[]).map((profile) => (
+                      <button
+                        key={profile}
+                        type="button"
+                        className={`dsp-switch ${activeDspProfile === profile ? "active" : ""}`}
+                        onClick={() => applyDspProfile(profile)}
+                      >
+                        {profile}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
             <div className="controls-footer">
               <button className="btn-signal-bay" onClick={openSignalBay}>
-                Open Signal Bay
+                Open Telemetry Deck
               </button>
             </div>
           </div>
@@ -300,8 +295,44 @@ export default function App() {
             <div className="center-bottom-stack">
               <div className="song-info">
                 <div className="song-title">{activeSong.title}</div>
-                <div className="song-artist">{activeSong.artist}</div>
-                <div className="song-album">{activeSong.album}</div>
+
+                <button
+                  type="button"
+                  className="song-detail-surface"
+                  onClick={toggleSongInfoView}
+                  aria-label="Toggle song details"
+                >
+                  {songInfoView === "credits" ? (
+                    <>
+                      <span className="song-artist">{activeSong.artist}</span>
+                      <span className="song-album">{activeSong.album}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="song-audio-primary">
+                        {audioStatus.primary}
+                      </span>
+                      <span className="song-audio-secondary">
+                        {audioStatus.secondary}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                <div className="song-detail-dots" aria-label="Song detail tabs">
+                  <button
+                    type="button"
+                    className={`song-detail-dot ${songInfoView === "credits" ? "active" : ""}`}
+                    onClick={() => setSongInfoView("credits")}
+                    aria-label="Show artist and album"
+                  />
+                  <button
+                    type="button"
+                    className={`song-detail-dot ${songInfoView === "audio" ? "active" : ""}`}
+                    onClick={() => setSongInfoView("audio")}
+                    aria-label="Show audio status"
+                  />
+                </div>
               </div>
 
               <div className="progress-bar-wrapper">
@@ -425,7 +456,10 @@ export default function App() {
       </section>
 
       <section className="signal-bay-screen" ref={signalBayRef}>
-        <SignalBay onClose={closeSignalBay} />
+        <SignalBay
+          onClose={closeSignalBay}
+          activeDspProfile={activeDspProfile}
+        />
       </section>
     </div>
   );

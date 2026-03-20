@@ -1,0 +1,105 @@
+HAJukeBox Prioritized Requirements
+=================================
+
+Scope
+- This file translates the current technical draft into a prioritized frontend sketch backlog.
+- Minor visual or naming differences are acceptable if the same functional intent is preserved.
+- The current three-column music-console layout remains the baseline.
+- Current implementation status is tracked in `docs/progress.md`.
+
+Priority Rules
+- P0 = essential for grading, monitoring, and technical credibility
+- P1 = core product behavior that should be visible in the main sketch
+- P2 = strong supporting telemetry and interaction features
+- P3 = polish or optional enhancements if time remains
+
+P0 - Monitoring, Logging, and ESP32 Communication
+-------------------------------------------------
+1. MQTT live feed terminal
+   - Show rotating raw messages such as distance, clap, LED commands, and other MQTT topics.
+   - This should look like a technical console and stay visible in the telemetry area.
+   - Status in current sketch: partially covered by Signal Bay tone, but raw topic feed is missing.
+
+2. System health monitor
+   - Show ESP32 RSSI in dBm, MQTT connection state, TLS/security label, and uptime.
+   - This is the clearest proof of device connectivity and monitoring.
+   - Status in current sketch: partially covered by Link Rack, but exact health metrics are missing.
+
+3. Human-readable event log
+   - Show timestamped events triggered by presence, clap, voice command, or shutdown logic.
+   - Keep entries readable and explicitly tied to system behavior.
+   - Status in current sketch: partially covered by Event Tape, but needs clearer real-world event wording.
+
+4. Sensor-to-action traceability
+   - The sketch should make it obvious that sensor data flows from ESP32 through MQTT into visible UI states.
+   - At least one visual path should connect telemetry with mode changes, playback behavior, or lighting commands.
+   - Status in current sketch: weakly implied, not explicit enough yet.
+
+P1 - Core Audio and Media Center
+--------------------------------
+5. Dynamic track metadata
+   - Show song title, artist, and active source label.
+   - Source must distinguish Spotify from local playback with a recognizable icon or badge.
+   - Status in current sketch: song metadata exists, source identity is missing.
+
+6. Master volume control
+   - Add one main volume slider representing synchronized volume between Spotify and ESP32 output.
+   - This should read as the primary audio control, not just a mixer decoration.
+   - Status in current sketch: volume fader exists, but not as synchronized master volume.
+
+7. Audio status strip
+   - Show bitrate or quality label and a small audio buffer indicator.
+   - The goal is to make playback feel technically instrumented.
+   - Status in current sketch: missing.
+
+8. DSP sound profiles
+   - Add quick presets such as Bass Boost, Vocal Clarity, and Flat.
+   - These should be easier to understand than low-level effect sliders alone.
+   - Status in current sketch: effects sliders exist, named DSP profiles are missing.
+
+9. Visualizer or VU meter
+   - Keep visible motion that suggests live audio output.
+   - Simple animated bars are enough for the sketch.
+   - Status in current sketch: already covered by the existing hero visualizer.
+
+P2 - Sensor Statistics
+----------------------
+10. Live distance graph
+    - Show time on X axis and distance in cm on Y axis.
+    - The graph should communicate approach or leave behavior over time.
+    - Status in current sketch: missing.
+
+11. Presence confidence gauge
+    - Show confidence as a percentage with a short reason, for example mobile plus distance detected.
+    - This should explain why the system believes the user is present.
+    - Status in current sketch: partially covered by presence language, but not as a confidence gauge.
+
+12. Clap counter
+    - Show how many claps were detected today.
+    - This is useful as a usage metric and quick proof of sensor activity.
+    - Status in current sketch: clap visuals exist, daily counter is missing.
+
+P3 - Control Layer and Presentation
+-----------------------------------
+13. Mode selector with descriptions
+    - Add large mode buttons with clear labels and short descriptions of what each mode changes.
+    - Suggested modes can map to the existing theme language if the behavior stays consistent.
+    - Status in current sketch: theme toggle exists, but not as an explicit mode selector.
+
+14. Voice trigger entry
+    - Add a microphone action with a clear label such as Listening via WebSpeech API or Google Voice Command Entry.
+    - The sketch only needs to present the interaction concept, not full voice integration.
+    - Status in current sketch: missing.
+
+Recommended Screen Placement
+----------------------------
+- Center hero: dynamic metadata, source badge, audio quality, buffer, visualizer, DSP presets
+- Left control area: master volume and mode selector
+- Right or lower technical area: distance graph, presence gauge, clap counter, MQTT feed, health monitor, event log
+- Signal Bay can remain the dedicated telemetry deck if it becomes more explicit and more technical
+
+Implementation Notes
+--------------------
+- Keep the vinyl record as the visual anchor.
+- Do not turn the UI into a generic dashboard; telemetry should still feel like part of a music device.
+- If tradeoffs are needed, complete all P0 items before refining P1-P3 items.

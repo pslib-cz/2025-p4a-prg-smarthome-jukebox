@@ -70,25 +70,27 @@
     flex-direction: column;
   }
 
+  .signal-bay-aside,
   .signal-bay-summary {
-    flex-basis: auto;
+    width: 100%;
   }
 
   .signal-bay-grid {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "pulse"
-      "links"
-      "trace"
-      "memory"
-      "tape";
+      "presence"
+      "health"
+      "distance"
+      "mqtt"
+      "automation"
+      "audio"
+      "events";
   }
 }
 
 @media (max-width: 860px) {
   .signal-bay-frame {
     padding: 24px;
-    border-radius: 26px;
   }
 
   .room-pulse-layout {
@@ -96,9 +98,19 @@
   }
 
   .room-pulse-readouts,
-  .clap-trace-meta,
+  .distance-summary-grid,
+  .audio-telemetry-grid,
   .event-tape-list {
     grid-template-columns: 1fr;
+  }
+
+  .presence-gauge-card,
+  .automation-item {
+    grid-template-columns: 1fr;
+  }
+
+  .automation-arrow {
+    justify-content: flex-start;
   }
 }
 
@@ -117,6 +129,18 @@
   }
 
   .room-radar-label {
+    display: none;
+  }
+
+  .presence-gauge {
+    --gauge-size: 116px;
+  }
+
+  .distance-axis {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .distance-axis span:nth-child(odd) {
     display: none;
   }
 

@@ -88,7 +88,7 @@
 }
 
 .signal-bay-aside {
-  flex: 0 0 320px;
+  flex: 0 0 340px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -247,15 +247,34 @@
   box-shadow: 0 0 18px var(--signal-glow);
 }
 
+.signal-bay-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.signal-bay-summary-chip {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--signal-surface-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
 .signal-bay-grid {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.95fr);
   grid-template-areas:
-    "pulse links"
-    "trace memory"
-    "tape tape";
+    "presence health"
+    "distance mqtt"
+    "automation audio"
+    "events events";
   gap: 20px;
 }
 
