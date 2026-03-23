@@ -1,30 +1,20 @@
 import type { CSSProperties } from "react";
+import type { MediaState, TelemetryState } from "../state/jukeboxTypes";
 import "./SignalBay.css";
 import "./SignalBayPanels.css";
 import "./SignalBayTelemetry.css";
 import "./SignalBayMotion.css";
+import { DSP_PROFILES, ROOM_MARKERS } from "./signalBayData";
 import {
-  AUDIO_TELEMETRY,
-  AUTOMATION_LANES,
-  BUFFER_LEVELS,
-  CLAP_TRACE,
-  DISTANCE_SERIES,
-  DISTANCE_SUMMARY,
-  DSP_PROFILES,
-  EVENT_TAPE,
-  MQTT_FEED,
-  MQTT_TOPICS,
-  PRESENCE_CONFIDENCE,
-  PRESENCE_REASON,
-  ROOM_MARKERS,
-  ROOM_READOUTS,
-  SIGNAL_LEVELS,
-  SUMMARY_CHIPS,
-  SYSTEM_HEALTH,
-} from "./signalBayData";
+  buildBufferLevels,
+  buildDistanceChartPoints,
+  buildSignalBayViewModel,
+} from "./signalBayViewModel";
 
 interface SignalBayProps {
   onClose: () => void;
+  telemetry: TelemetryState;
+  media: MediaState;
   activeDspProfile: string;
 }
 
@@ -33,59 +23,53 @@ const CHART_HEIGHT = 180;
 const CHART_PADDING_X = 18;
 const CHART_PADDING_Y = 20;
 
-function buildLinePoints() {
-  const values = DISTANCE_SERIES.map((point) => point.value);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  const range = maxValue - minValue || 1;
-  const usableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
-  const usableHeight = CHART_HEIGHT - CHART_PADDING_Y * 2;
-
-  return DISTANCE_SERIES.map((point, index) => {
-    const x =
-      CHART_PADDING_X +
-      (usableWidth * index) / Math.max(DISTANCE_SERIES.length - 1, 1);
-    const normalized = (point.value - minValue) / range;
-    const y = CHART_HEIGHT - CHART_PADDING_Y - normalized * usableHeight;
-
-    return { ...point, x, y };
-  });
-}
-
-function PresenceGauge() {
+function PresenceGauge({
+  confidencePercent,
+  reason,
+}: {
+  confidencePercent: number;
+  reason: string;
+}) {
   return (
     <div className="presence-gauge-card">
       <div
         className="presence-gauge"
         style={
           {
-            "--presence-value": `${PRESENCE_CONFIDENCE}%`,
+            "--presence-value": `${confidencePercent}%`,
           } as CSSProperties
         }
       >
         <div className="presence-gauge-inner">
-          <strong>{PRESENCE_CONFIDENCE}%</strong>
+          <strong>{confidencePercent}%</strong>
           <span>Presence</span>
         </div>
       </div>
 
       <div className="presence-gauge-copy">
         <span className="presence-gauge-label">Fusion confidence</span>
-        <strong>{PRESENCE_REASON}</strong>
+        <strong>{reason}</strong>
         <p>ESP32 presence score is promoted only after the mobile beacon and distance lane agree.</p>
       </div>
     </div>
   );
 }
 
-function DistanceChart() {
-  const chartPoints = buildLinePoints();
+function DistanceChart({
+  distanceSeries,
+}: {
+  distanceSeries: TelemetryState["distanceSeries"];
+}) {
+  const chartPoints = buildDistanceChartPoints(distanceSeries);
   const linePoints = chartPoints.map((point) => `${point.x},${point.y}`).join(" ");
-  const areaPoints = [
-    `${CHART_PADDING_X},${CHART_HEIGHT - CHART_PADDING_Y}`,
-    ...chartPoints.map((point) => `${point.x},${point.y}`),
-    `${CHART_WIDTH - CHART_PADDING_X},${CHART_HEIGHT - CHART_PADDING_Y}`,
-  ].join(" ");
+  const areaPoints =
+    chartPoints.length > 0
+      ? [
+          `${CHART_PADDING_X},${CHART_HEIGHT - CHART_PADDING_Y}`,
+          ...chartPoints.map((point) => `${point.x},${point.y}`),
+          `${CHART_WIDTH - CHART_PADDING_X},${CHART_HEIGHT - CHART_PADDING_Y}`,
+        ].join(" ")
+      : "";
 
   return (
     <div className="distance-chart-shell">
@@ -106,8 +90,8 @@ function DistanceChart() {
           />
         ))}
 
-        <polygon className="distance-area" points={areaPoints} />
-        <polyline className="distance-line" points={linePoints} />
+        {areaPoints ? <polygon className="distance-area" points={areaPoints} /> : null}
+        {linePoints ? <polyline className="distance-line" points={linePoints} /> : null}
 
         {chartPoints.map((point, index) => (
           <circle
@@ -121,7 +105,7 @@ function DistanceChart() {
       </svg>
 
       <div className="distance-axis">
-        {DISTANCE_SERIES.map((point) => (
+        {distanceSeries.map((point) => (
           <span key={point.time}>{point.time}</span>
         ))}
       </div>
@@ -129,10 +113,12 @@ function DistanceChart() {
   );
 }
 
-function BufferMeter() {
+function BufferMeter({ bufferPercent }: { bufferPercent: number }) {
+  const bufferLevels = buildBufferLevels(bufferPercent);
+
   return (
     <div className="buffer-meter" aria-label="Audio buffer level">
-      {BUFFER_LEVELS.map((level, index) => (
+      {bufferLevels.map((level, index) => (
         <span
           key={`${level}-${index}`}
           className={`buffer-meter-bar ${level >= 70 ? "is-stable" : ""}`}
@@ -143,7 +129,15 @@ function BufferMeter() {
   );
 }
 
-export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps) {
+export default function SignalBay({
+  onClose,
+  telemetry,
+  media,
+  activeDspProfile,
+}: SignalBayProps) {
+  const viewModel = buildSignalBayViewModel(telemetry, media);
+  const recentEvents = telemetry.eventLog.slice(0, 4);
+
   return (
     <div className="signal-bay">
       <div className="signal-bay-frame">
@@ -171,7 +165,7 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
               <span className="signal-bay-badge">P0 telemetry live</span>
 
               <div className="signal-bay-levels">
-                {SIGNAL_LEVELS.map((level) => (
+                {viewModel.signalLevels.map((level) => (
                   <div key={level.label} className="signal-bay-level">
                     <span className="signal-bay-level-label">{level.label}</span>
                     <div className="signal-bay-level-track">
@@ -186,7 +180,7 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
               </div>
 
               <div className="signal-bay-summary-chips">
-                {SUMMARY_CHIPS.map((chip) => (
+                {viewModel.summaryChips.map((chip) => (
                   <span key={chip} className="signal-bay-summary-chip">
                     {chip}
                   </span>
@@ -203,7 +197,9 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
                 <span className="bay-panel-kicker">Presence Field</span>
                 <h3 className="bay-panel-title">Sensor fusion</h3>
               </div>
-              <span className="bay-panel-meta">{PRESENCE_CONFIDENCE}% confidence</span>
+              <span className="bay-panel-meta">
+                {telemetry.presence.confidencePercent}% confidence
+              </span>
             </div>
 
             <div className="room-pulse-layout">
@@ -240,10 +236,13 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
               </div>
 
               <div className="room-pulse-stack">
-                <PresenceGauge />
+                <PresenceGauge
+                  confidencePercent={telemetry.presence.confidencePercent}
+                  reason={telemetry.presence.reason}
+                />
 
                 <div className="room-pulse-readouts">
-                  {ROOM_READOUTS.map((item) => (
+                  {viewModel.roomReadouts.map((item) => (
                     <div key={item.label} className="room-pulse-readout">
                       <span className="room-pulse-readout-label">{item.label}</span>
                       <strong className="room-pulse-readout-value">{item.value}</strong>
@@ -260,11 +259,13 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
                 <span className="bay-panel-kicker">System Health</span>
                 <h3 className="bay-panel-title">Broker and edge node</h3>
               </div>
-              <span className="bay-panel-meta">Connected / TLS</span>
+              <span className="bay-panel-meta">
+                {telemetry.system.mqttStatus} / {telemetry.system.mqttSecurity}
+              </span>
             </div>
 
             <div className="system-health-list">
-              {SYSTEM_HEALTH.map((item) => (
+              {viewModel.systemHealth.map((item) => (
                 <div key={item.label} className="system-health-item" data-tone={item.tone}>
                   <span className="system-health-led" />
                   <div className="system-health-copy">
@@ -283,13 +284,13 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
                 <span className="bay-panel-kicker">Distance Graph</span>
                 <h3 className="bay-panel-title">Approach timeline</h3>
               </div>
-              <span className="bay-panel-meta">10 samples</span>
+              <span className="bay-panel-meta">{telemetry.distanceSeries.length} samples</span>
             </div>
 
-            <DistanceChart />
+            <DistanceChart distanceSeries={telemetry.distanceSeries} />
 
             <div className="distance-summary-grid">
-              {DISTANCE_SUMMARY.map((item) => (
+              {viewModel.distanceSummary.map((item) => (
                 <div key={item.label} className="distance-summary-card">
                   <span>{item.label}</span>
                   <strong>{item.value}</strong>
@@ -298,7 +299,7 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
             </div>
 
             <div className="clap-trace-strip" aria-label="Clap activity trace">
-              {CLAP_TRACE.map((bar, index) => (
+              {viewModel.clapTrace.map((bar, index) => (
                 <span
                   key={`${bar}-${index}`}
                   className="clap-trace-bar"
@@ -317,7 +318,9 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
                 <span className="bay-panel-kicker">MQTT Live Feed</span>
                 <h3 className="bay-panel-title">Raw topic stream</h3>
               </div>
-              <span className="bay-panel-meta">Broker jitter 18 ms</span>
+              <span className="bay-panel-meta">
+                Broker jitter {telemetry.system.brokerLatency}
+              </span>
             </div>
 
             <div className="mqtt-terminal">
@@ -327,8 +330,11 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
               </div>
 
               <div className="mqtt-terminal-body">
-                {MQTT_FEED.map((entry) => (
-                  <div key={`${entry.direction}-${entry.topic}`} className={`mqtt-line tone-${entry.tone}`}>
+                {telemetry.mqttFeed.map((entry, index) => (
+                  <div
+                    key={`${entry.direction}-${entry.topic}-${index}`}
+                    className={`mqtt-line tone-${entry.tone}`}
+                  >
                     <span className="mqtt-line-direction">[{entry.direction}]</span>
                     <span className="mqtt-line-topic">{entry.topic}</span>
                     <span className="mqtt-line-separator">:</span>
@@ -339,7 +345,7 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
             </div>
 
             <div className="mqtt-topic-strip">
-              {MQTT_TOPICS.map((topic) => (
+              {viewModel.mqttTopics.map((topic) => (
                 <span key={topic} className="mqtt-topic-chip">
                   {topic}
                 </span>
@@ -353,11 +359,13 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
                 <span className="bay-panel-kicker">Traceability</span>
                 <h3 className="bay-panel-title">Sensor to action lanes</h3>
               </div>
-              <span className="bay-panel-meta">3 active rules</span>
+              <span className="bay-panel-meta">
+                {telemetry.automationLanes.length} active rules
+              </span>
             </div>
 
             <div className="automation-list">
-              {AUTOMATION_LANES.map((lane) => (
+              {telemetry.automationLanes.map((lane) => (
                 <div key={lane.source} className="automation-item">
                   <div className="automation-step">
                     <span>Input</span>
@@ -392,11 +400,13 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
             </div>
 
             <div className="audio-telemetry-grid">
-              {AUDIO_TELEMETRY.map((item) => (
+              {viewModel.audioTelemetry.map((item) => (
                 <div key={item.label} className="audio-telemetry-card">
                   <span>{item.label}</span>
                   <strong>{item.value}</strong>
-                  {item.label === "Buffer" ? <BufferMeter /> : null}
+                  {item.label === "Buffer" ? (
+                    <BufferMeter bufferPercent={media.audio.bufferPercent} />
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -419,11 +429,11 @@ export default function SignalBay({ onClose, activeDspProfile }: SignalBayProps)
                 <span className="bay-panel-kicker">Event Log</span>
                 <h3 className="bay-panel-title">Human-readable actions</h3>
               </div>
-              <span className="bay-panel-meta">Last 4 events</span>
+              <span className="bay-panel-meta">Last {recentEvents.length} events</span>
             </div>
 
             <div className="event-tape-list">
-              {EVENT_TAPE.map((event, index) => (
+              {recentEvents.map((event, index) => (
                 <div
                   key={`${event.time}-${event.action}`}
                   className="event-tape-item"

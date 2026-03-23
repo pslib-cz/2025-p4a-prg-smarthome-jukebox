@@ -44,22 +44,32 @@ Done
 - A shared React provider and hook now expose `state`, `status`, and `sendCommand`.
 - The hero player now reads track, playback, progress, volume, theme, and DSP profile from unified app state.
 - The song list and playlists now read from unified library state instead of local inline constants.
+- `Telemetry Deck` now reads live panel data from unified telemetry and media state instead of component-local constants.
+- The right panel now supports `Local Music <-> Spotify` UI mode switching.
+- A dedicated Spotify sketch panel now exists for auth, SDK, transfer, scopes, and browser-device states.
+- The Spotify sketch panel was simplified into a more minimal two-view surface with hidden setup details.
+- The Spotify sketch panel now explicitly separates `Player` and `Tech` views and no longer overlaps the footer switch button.
+- Spotify sketch state now lives inside the shared app contract instead of as isolated component-only mock UI.
+- Theme-colored semi-transparent scrollbars now style overflow areas in a more consistent way.
 - A reducer-based command layer now exists for player and UI state transitions.
 - Unit tests now cover core reducer behavior for track cycling, value clamping, and invalid track commands.
+- Unit tests now also cover `Telemetry Deck` view-model mapping and chart-point generation.
+- Unit tests now also cover Spotify sketch state/view-model transitions.
 - Root-level project documentation entrypoints now exist in `README.md` and `MASTER-PLAN.md`.
 
 In progress
 
-- Refactor `Telemetry Deck` to consume unified telemetry state instead of static imported constants.
 - Define the exact Home Assistant entity and MQTT topic contract the frontend will expect.
 - Prepare loading, disconnected, and empty-state handling on top of the new provider layer.
+- Start separating purely decorative telemetry constants from baseline HA-driven telemetry data.
 
 Next
 
-- Bind `Telemetry Deck` panels and charts to `state.telemetry`.
 - Add visible `loading`, `disconnected`, and `empty` UI states for the provider-backed app shell.
 - Write the first Home Assistant adapter draft against the unified state contract.
 - Freeze a concrete HA entity list and MQTT topic list for the baseline local MP3 flow.
+- Reduce remaining static telemetry fallback data to only visual scaffolding markers and labels.
+- Decide how the future real Spotify auth and SDK events will map onto the new Spotify sketch state.
 
 Later
 

@@ -923,6 +923,7 @@
 .playlist-panel {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   padding: 28px 20px;
   background: var(--bg-panel);
   border-left: 1px solid var(--border-color);
@@ -1224,6 +1225,7 @@
 /* ===== SPOTIFY SECTION ===== */
 .spotify-section {
   margin-top: auto;
+  flex-shrink: 0;
   padding-top: 16px;
   border-top: 1px solid var(--border-color);
 }
@@ -1389,18 +1391,42 @@
 }
 
 /* Scrollbar styling */
+.playlist-list,
+.effects-container,
+.playlists-view,
+.spotify-sketch-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
 .playlist-list::-webkit-scrollbar,
-.effects-container::-webkit-scrollbar {
-  width: 4px;
+.effects-container::-webkit-scrollbar,
+.playlists-view::-webkit-scrollbar,
+.spotify-sketch-panel::-webkit-scrollbar {
+  width: 6px;
 }
 
 .playlist-list::-webkit-scrollbar-track,
-.effects-container::-webkit-scrollbar-track {
-  background: transparent;
+.effects-container::-webkit-scrollbar-track,
+.playlists-view::-webkit-scrollbar-track,
+.spotify-sketch-panel::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
 }
 
 .playlist-list::-webkit-scrollbar-thumb,
-.effects-container::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 2px;
+.effects-container::-webkit-scrollbar-thumb,
+.playlists-view::-webkit-scrollbar-thumb,
+.spotify-sketch-panel::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+.playlist-list::-webkit-scrollbar-thumb:hover,
+.effects-container::-webkit-scrollbar-thumb:hover,
+.playlists-view::-webkit-scrollbar-thumb:hover,
+.spotify-sketch-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
 }

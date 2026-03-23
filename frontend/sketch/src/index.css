@@ -30,6 +30,9 @@
   --accent-secondary: #c49a6c;
   --accent-glow: rgba(166, 124, 82, 0.3);
   --accent-button: #a67c52;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(166, 124, 82, 0.28);
+  --scrollbar-thumb-hover: rgba(166, 124, 82, 0.42);
 
   --border-color: #e6dcd0;
   --border-active: #a67c52;
@@ -72,6 +75,8 @@
   --accent-secondary: #c840ff;
   --accent-glow: rgba(155, 89, 247, 0.5);
   --accent-button: #9b59f7;
+  --scrollbar-thumb: rgba(155, 89, 247, 0.34);
+  --scrollbar-thumb-hover: rgba(200, 64, 255, 0.46);
 
   --border-color: rgba(155, 89, 247, 0.2);
   --border-active: #9b59f7;
@@ -120,6 +125,8 @@
   --accent-secondary: #40c4c0;
   --accent-glow: rgba(46, 155, 172, 0.4);
   --accent-button: #2e9bac;
+  --scrollbar-thumb: rgba(46, 155, 172, 0.34);
+  --scrollbar-thumb-hover: rgba(64, 196, 192, 0.44);
 
   --border-color: rgba(46, 155, 172, 0.2);
   --border-active: #2e9bac;
@@ -168,6 +175,8 @@
   --accent-secondary: #5cc878;
   --accent-glow: rgba(61, 168, 94, 0.4);
   --accent-button: #3da85e;
+  --scrollbar-thumb: rgba(61, 168, 94, 0.34);
+  --scrollbar-thumb-hover: rgba(92, 200, 120, 0.44);
 
   --border-color: rgba(61, 168, 94, 0.2);
   --border-active: #3da85e;

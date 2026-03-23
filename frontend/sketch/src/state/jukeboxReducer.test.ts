@@ -32,4 +32,29 @@ describe("applyJukeboxCommand", () => {
 
     expect(unchangedState).toBe(mockJukeboxState);
   });
+
+  it("authorizes the Spotify sketch and moves the SDK into loading state", () => {
+    const spotifyState = applyJukeboxCommand(mockJukeboxState, {
+      type: "spotify_authorize",
+    });
+
+    expect(spotifyState.media.spotifyConnected).toBe(true);
+    expect(spotifyState.spotify.authStatus).toBe("connected");
+    expect(spotifyState.spotify.sdkStatus).toBe("loading");
+  });
+
+  it("activates the Spotify browser player after transfer playback", () => {
+    const readyState = applyJukeboxCommand(mockJukeboxState, {
+      type: "spotify_sdk_ready",
+      deviceId: "spotify-web-player-1",
+      deviceName: "HAJukeBox Web Player",
+    });
+    const activeState = applyJukeboxCommand(readyState, {
+      type: "spotify_transfer_playback",
+    });
+
+    expect(activeState.spotify.deviceId).toBe("spotify-web-player-1");
+    expect(activeState.spotify.transferStatus).toBe("active");
+    expect(activeState.spotify.isActiveDevice).toBe(true);
+  });
 });

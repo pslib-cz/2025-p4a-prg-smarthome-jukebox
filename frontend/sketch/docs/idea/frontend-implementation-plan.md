@@ -182,7 +182,7 @@ Status:
 ### Step 6
 - Refactor `Telemetry Deck` to read from unified state.
 Status:
-- next
+- done
 
 ### Step 7
 - Add loading, disconnected, and empty-state UI.
@@ -242,9 +242,9 @@ Status:
 4. If telemetry uses a different state model than the player, the dashboard will feel fake again.
 
 ## Immediate Next Step
-Implement the rest of Phase 2:
-- bind `Telemetry Deck` to `state.telemetry`
-- remove remaining static telemetry imports from the UI layer
+Implement the first UI resiliency pass:
 - add minimal provider-backed loading and disconnected states
+- reduce remaining telemetry constants to decorative-only scaffolding
+- freeze the first HA entity and MQTT topic contract draft
 
-That is the smallest useful next step that keeps the visual sketch intact while making the frontend genuinely adapter-ready.
+That is the smallest useful next step after the Telemetry Deck binding, and it moves the app from mock-ready to adapter-ready.

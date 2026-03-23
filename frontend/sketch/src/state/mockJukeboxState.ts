@@ -1,5 +1,7 @@
 import { AUDIO_STATUS_BASE, PLAYLISTS, SONGS } from "../appSketchData";
 import {
+  AUTOMATION_LANES,
+  CLAP_TRACE,
   CLAP_COUNT,
   DISTANCE_SERIES,
   EVENT_TAPE,
@@ -7,6 +9,7 @@ import {
   PRESENCE_CONFIDENCE,
   PRESENCE_REASON,
 } from "../components/signalBayData";
+import { INITIAL_SPOTIFY_STATE } from "../spotifySketchData";
 import type { JukeboxAppState } from "./jukeboxTypes";
 
 const activeTrack = {
@@ -50,8 +53,11 @@ export const mockJukeboxState: JukeboxAppState = {
       reason: PRESENCE_REASON,
       distanceCm: 42,
       clapCountToday: CLAP_COUNT,
+      lastClapAt: "12:50:10",
+      lastMode: "Focus auto-armed",
     },
     distanceSeries: DISTANCE_SERIES,
+    clapTrace: CLAP_TRACE,
     mqttFeed: MQTT_FEED,
     eventLog: EVENT_TAPE,
     system: {
@@ -61,5 +67,7 @@ export const mockJukeboxState: JukeboxAppState = {
       rssiDbm: "-65 dBm",
       brokerLatency: "18 ms",
     },
+    automationLanes: AUTOMATION_LANES,
   },
+  spotify: INITIAL_SPOTIFY_STATE,
 };

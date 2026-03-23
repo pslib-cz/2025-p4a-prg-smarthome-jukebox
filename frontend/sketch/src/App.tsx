@@ -5,9 +5,9 @@ import "./components/HeroStage.css";
 import VerticalFader from "./components/VerticalFader";
 import HorizontalSlider from "./components/HorizontalSlider";
 import VinylRecord from "./components/VinylRecord";
-import PlaylistItem from "./components/PlaylistItem";
 import DiscoParticles from "./components/DiscoParticles";
 import SignalBay from "./components/SignalBay";
+import MusicPanel from "./components/MusicPanel";
 import {
   DSP_PRESETS,
   isDspProfileKey,
@@ -17,15 +17,12 @@ import {
   VolumeIcon,
   BassIcon,
   TrebleIcon,
-  MusicNoteIcon,
   MixerIcon,
   SparkleIcon,
   PlayIcon,
   PauseIcon,
   PrevIcon,
   NextIcon,
-  SongsIcon,
-  ListIcon,
   CasualIcon,
   DiscoBallIcon,
   FocusIcon,
@@ -44,7 +41,6 @@ export default function App() {
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const signalBayRef = useRef<HTMLElement | null>(null);
   const [activeTab, setActiveTab] = useState<"mixer" | "effects">("mixer");
-  const [rightTab, setRightTab] = useState<"playlist" | "songs">("songs");
   const [songInfoView, setSongInfoView] = useState<"credits" | "audio">(
     "credits",
   );
@@ -66,9 +62,9 @@ export default function App() {
   const isPlaying = state.media.isPlaying;
   const progress = state.media.progressPercent;
   const volume = state.media.volumePercent;
-  const spotifyConnected = state.media.spotifyConnected;
   const activeSongId = state.media.activeTrackId;
   const activeSong = state.media.activeTrack;
+  const spotify = state.spotify;
   const activeDspProfile = isDspProfileKey(state.media.audio.dspProfile)
     ? state.media.audio.dspProfile
     : DEFAULT_DSP_PROFILE;
@@ -367,108 +363,45 @@ export default function App() {
             </div>
           </div>
 
-          <div className="playlist-panel">
-            <div className="playlist-header">
-              <div className="playlist-title-group">
-                <MusicNoteIcon className="playlist-icon" />
-                <h2 className="playlist-title">Music</h2>
-              </div>
-              <button className="mode-toggle" onClick={toggleTheme}>
-                <span className="mode-icon">{THEME_CONFIG[theme].icon}</span>
-                {THEME_CONFIG[theme].label}
-              </button>
-            </div>
-
-            <div className="tabs right-tabs">
-              <button
-                className={`tab ${rightTab === "songs" ? "active" : ""}`}
-                onClick={() => setRightTab("songs")}
-              >
-                <SongsIcon className="tab-icon" /> Songs
-              </button>
-              <button
-                className={`tab ${rightTab === "playlist" ? "active" : ""}`}
-                onClick={() => setRightTab("playlist")}
-              >
-                <ListIcon className="tab-icon" /> Playlists
-              </button>
-            </div>
-
-            {rightTab === "songs" ? (
-              <div className="playlist-list">
-                {state.library.songs.map((song) => (
-                  <PlaylistItem
-                    key={song.id}
-                    title={song.title}
-                    artist={song.artist}
-                    duration={song.duration}
-                    coverUrl={song.coverUrl}
-                    isActive={song.id === activeSongId}
-                    onClick={() => {
-                      void sendCommand({
-                        type: "play_track",
-                        trackId: song.id,
-                      });
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="playlists-view">
-                {!spotifyConnected && (
-                  <button className="btn-create-playlist">
-                    <span className="btn-create-icon">+</span>
-                    Create Playlist
-                  </button>
-                )}
-                <div className="playlist-list">
-                  {state.library.playlists.map((playlist) => (
-                    <div key={playlist.id} className="playlist-card">
-                      <span className="playlist-card-icon">{playlist.icon}</span>
-                      <div className="playlist-card-info">
-                        <div className="playlist-card-name">
-                          {playlist.name}
-                        </div>
-                        <div className="playlist-card-count">
-                          {playlist.songCount} songs
-                        </div>
-                      </div>
-                      <span className="playlist-card-arrow">›</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="spotify-section">
-              <button
-                className={`btn-spotify ${spotifyConnected ? "connected" : ""}`}
-                onClick={() => {
-                  void sendCommand({
-                    type: "set_spotify_connection",
-                    connected: !spotifyConnected,
-                  });
-                }}
-              >
-                <svg
-                  className="spotify-logo"
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  fill="currentColor"
-                >
-                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-                </svg>
-                {spotifyConnected ? "Spotify Connected" : "Connect Spotify"}
-              </button>
-            </div>
-          </div>
+          <MusicPanel
+            theme={theme}
+            themeControl={THEME_CONFIG[theme]}
+            songs={state.library.songs}
+            playlists={state.library.playlists}
+            activeSongId={activeSongId}
+            spotify={spotify}
+            onToggleTheme={toggleTheme}
+            onSelectTrack={(trackId) => {
+              void sendCommand({
+                type: "play_track",
+                trackId,
+              });
+            }}
+            onSpotifyAuthorize={() => {
+              void sendCommand({ type: "spotify_authorize" });
+            }}
+            onSpotifyInitialize={() => {
+              void sendCommand({
+                type: "spotify_sdk_ready",
+                deviceId: "spotify-web-player-1",
+                deviceName: "HAJukeBox Web Player",
+              });
+            }}
+            onSpotifyTransfer={() => {
+              void sendCommand({ type: "spotify_transfer_playback" });
+            }}
+            onSpotifyDisconnect={() => {
+              void sendCommand({ type: "spotify_disconnect" });
+            }}
+          />
         </div>
       </section>
 
       <section className="signal-bay-screen" ref={signalBayRef}>
         <SignalBay
           onClose={closeSignalBay}
+          telemetry={state.telemetry}
+          media={state.media}
           activeDspProfile={activeDspProfile}
         />
       </section>

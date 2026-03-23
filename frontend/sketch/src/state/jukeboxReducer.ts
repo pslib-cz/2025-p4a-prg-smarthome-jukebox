@@ -63,7 +63,7 @@ function cycleTrack(state: JukeboxAppState, direction: "next" | "previous") {
 export function applyJukeboxCommand(
   state: JukeboxAppState,
   command: JukeboxCommand,
-) {
+): JukeboxAppState {
   switch (command.type) {
     case "play":
       return {
@@ -119,6 +119,67 @@ export function applyJukeboxCommand(
         media: {
           ...state.media,
           spotifyConnected: command.connected,
+        },
+      };
+
+    case "spotify_authorize":
+      return {
+        ...state,
+        media: {
+          ...state.media,
+          spotifyConnected: true,
+        },
+        spotify: {
+          ...state.spotify,
+          authStatus: "connected",
+          sdkStatus: "loading",
+          transferStatus: "idle",
+          isActiveDevice: false,
+          lastError: null,
+        },
+      };
+
+    case "spotify_sdk_ready":
+      return {
+        ...state,
+        spotify: {
+          ...state.spotify,
+          authStatus: "connected",
+          sdkStatus: "ready",
+          deviceId: command.deviceId ?? state.spotify.deviceId ?? "spotify-web-player-1",
+          deviceName: command.deviceName ?? state.spotify.deviceName,
+          lastError: null,
+        },
+      };
+
+    case "spotify_transfer_playback":
+      return {
+        ...state,
+        spotify: {
+          ...state.spotify,
+          authStatus: "connected",
+          sdkStatus: state.spotify.sdkStatus === "idle" ? "ready" : state.spotify.sdkStatus,
+          transferStatus: "active",
+          isActiveDevice: true,
+          lastError: null,
+        },
+      };
+
+    case "spotify_disconnect":
+      return {
+        ...state,
+        media: {
+          ...state.media,
+          spotifyConnected: false,
+        },
+        spotify: {
+          ...state.spotify,
+          authStatus: "disconnected",
+          sdkStatus: "idle",
+          transferStatus: "idle",
+          deviceId: null,
+          isActiveDevice: false,
+          lastError: null,
         },
       };
 

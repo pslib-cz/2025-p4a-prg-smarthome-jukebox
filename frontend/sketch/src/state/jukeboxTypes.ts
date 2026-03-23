@@ -43,11 +43,44 @@ export interface MediaState {
   audio: AudioStatus;
 }
 
+export type SpotifyAuthStatus =
+  | "disconnected"
+  | "authorizing"
+  | "connected"
+  | "error";
+
+export type SpotifySdkStatus =
+  | "idle"
+  | "loading"
+  | "ready"
+  | "not_ready"
+  | "error";
+
+export type SpotifyTransferStatus = "idle" | "pending" | "active" | "error";
+export type SpotifyAccountTier = "unknown" | "free" | "premium";
+
+export interface SpotifyState {
+  authStatus: SpotifyAuthStatus;
+  sdkStatus: SpotifySdkStatus;
+  transferStatus: SpotifyTransferStatus;
+  accountTier: SpotifyAccountTier;
+  deviceId: string | null;
+  deviceName: string;
+  isActiveDevice: boolean;
+  lastError: string | null;
+  currentTrack: JukeboxTrack | null;
+  positionMs: number;
+  durationMs: number;
+  scopes: string[];
+}
+
 export interface PresenceState {
   confidencePercent: number;
   reason: string;
   distanceCm: number;
   clapCountToday: number;
+  lastClapAt: string;
+  lastMode: string;
 }
 
 export interface DistancePoint {
@@ -68,6 +101,12 @@ export interface EventLogItem {
   meta: string;
 }
 
+export interface AutomationLaneState {
+  source: string;
+  fusion: string;
+  action: string;
+}
+
 export interface SystemHealthState {
   mqttStatus: string;
   mqttSecurity: string;
@@ -79,9 +118,11 @@ export interface SystemHealthState {
 export interface TelemetryState {
   presence: PresenceState;
   distanceSeries: DistancePoint[];
+  clapTrace: number[];
   mqttFeed: MqttFeedLine[];
   eventLog: EventLogItem[];
   system: SystemHealthState;
+  automationLanes: AutomationLaneState[];
 }
 
 export interface LibraryState {
@@ -95,6 +136,7 @@ export interface JukeboxAppState {
   media: MediaState;
   library: LibraryState;
   telemetry: TelemetryState;
+  spotify: SpotifyState;
 }
 
 export type JukeboxCommand =
@@ -107,6 +149,10 @@ export type JukeboxCommand =
   | { type: "set_theme"; theme: JukeboxTheme }
   | { type: "set_spotify_connection"; connected: boolean }
   | { type: "set_dsp_profile"; profile: string }
+  | { type: "spotify_authorize" }
+  | { type: "spotify_sdk_ready"; deviceId?: string; deviceName?: string }
+  | { type: "spotify_transfer_playback" }
+  | { type: "spotify_disconnect" }
   | { type: "play_track"; trackId: number };
 
 export interface JukeboxDataSource {
