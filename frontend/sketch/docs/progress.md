@@ -1,6 +1,6 @@
 # HAJukeBox Progress Tracker
 
-Last updated: 2026-03-20
+Last updated: 2026-03-23
 
 Purpose
 
@@ -56,19 +56,22 @@ Done
 - Unit tests now also cover `Telemetry Deck` view-model mapping and chart-point generation.
 - Unit tests now also cover Spotify sketch state/view-model transitions.
 - Root-level project documentation entrypoints now exist in `README.md` and `MASTER-PLAN.md`.
+- A shell-level status banner now exposes `live`, `syncing`, `offline`, `standby`, and `error` states from the provider-backed app state, and it now lives inside `Telemetry Deck` instead of the hero.
+- The local music panel now has explicit empty-state surfaces for songs and playlists, so real data gaps no longer collapse into blank sections.
+- Unit tests now also cover app-shell status derivation for loading, standby, offline, and error scenarios.
 
 In progress
 
 - Define the exact Home Assistant entity and MQTT topic contract the frontend will expect.
-- Prepare loading, disconnected, and empty-state handling on top of the new provider layer.
 - Start separating purely decorative telemetry constants from baseline HA-driven telemetry data.
+- Decide how the first real telemetry adapter should expose freshness and reconnect timing into the shell state.
 
 Next
 
-- Add visible `loading`, `disconnected`, and `empty` UI states for the provider-backed app shell.
 - Write the first Home Assistant adapter draft against the unified state contract.
 - Freeze a concrete HA entity list and MQTT topic list for the baseline local MP3 flow.
 - Reduce remaining static telemetry fallback data to only visual scaffolding markers and labels.
+- Add matching empty/offline placeholders inside `Telemetry Deck` panels once the HA telemetry contract is frozen.
 - Decide how the future real Spotify auth and SDK events will map onto the new Spotify sketch state.
 
 Later

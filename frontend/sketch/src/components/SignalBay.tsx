@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 import type { MediaState, TelemetryState } from "../state/jukeboxTypes";
+import type { AppShellStatusViewModel } from "../state/appShellStatus";
+import AppStatusBanner from "./AppStatusBanner";
 import "./SignalBay.css";
 import "./SignalBayPanels.css";
 import "./SignalBayTelemetry.css";
@@ -16,6 +18,7 @@ interface SignalBayProps {
   telemetry: TelemetryState;
   media: MediaState;
   activeDspProfile: string;
+  appStatus: AppShellStatusViewModel;
 }
 
 const CHART_WIDTH = 360;
@@ -134,6 +137,7 @@ export default function SignalBay({
   telemetry,
   media,
   activeDspProfile,
+  appStatus,
 }: SignalBayProps) {
   const viewModel = buildSignalBayViewModel(telemetry, media);
   const recentEvents = telemetry.eventLog.slice(0, 4);
@@ -151,40 +155,47 @@ export default function SignalBay({
             </p>
           </div>
 
-          <div className="signal-bay-aside">
-            <button
-              type="button"
-              className="signal-bay-close"
-              onClick={onClose}
-              aria-label="Close Telemetry Deck"
-            >
-              Close
-            </button>
+          <div className="signal-bay-header-cards">
+            <div className="signal-bay-status-slot">
+              <AppStatusBanner viewModel={appStatus} />
+            </div>
 
-            <div className="signal-bay-summary">
-              <span className="signal-bay-badge">P0 telemetry live</span>
+            <div className="signal-bay-aside">
+              <div className="signal-bay-summary">
+                <div className="signal-bay-summary-head">
+                  <span className="signal-bay-badge">P0 telemetry live</span>
+                  <button
+                    type="button"
+                    className="signal-bay-close"
+                    onClick={onClose}
+                    aria-label="Close Telemetry Deck"
+                  >
+                    Close
+                  </button>
+                </div>
 
-              <div className="signal-bay-levels">
-                {viewModel.signalLevels.map((level) => (
-                  <div key={level.label} className="signal-bay-level">
-                    <span className="signal-bay-level-label">{level.label}</span>
-                    <div className="signal-bay-level-track">
-                      <span
-                        className="signal-bay-level-fill"
-                        style={{ width: `${level.value}%` }}
-                      />
+                <div className="signal-bay-levels">
+                  {viewModel.signalLevels.map((level) => (
+                    <div key={level.label} className="signal-bay-level">
+                      <span className="signal-bay-level-label">{level.label}</span>
+                      <div className="signal-bay-level-track">
+                        <span
+                          className="signal-bay-level-fill"
+                          style={{ width: `${level.value}%` }}
+                        />
+                      </div>
+                      <span className="signal-bay-level-value">{level.value}%</span>
                     </div>
-                    <span className="signal-bay-level-value">{level.value}%</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              <div className="signal-bay-summary-chips">
-                {viewModel.summaryChips.map((chip) => (
-                  <span key={chip} className="signal-bay-summary-chip">
-                    {chip}
-                  </span>
-                ))}
+                <div className="signal-bay-summary-chips">
+                  {viewModel.summaryChips.map((chip) => (
+                    <span key={chip} className="signal-bay-summary-chip">
+                      {chip}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

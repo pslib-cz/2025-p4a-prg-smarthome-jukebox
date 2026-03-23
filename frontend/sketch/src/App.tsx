@@ -29,6 +29,7 @@ import {
   EcoIcon,
 } from "./components/Icons";
 import { useJukebox } from "./state/useJukebox";
+import { buildAppShellStatusViewModel } from "./state/appShellStatus";
 
 const THEMES = ["casual", "disco", "focus", "eco"] as const;
 type Theme = (typeof THEMES)[number];
@@ -37,7 +38,7 @@ const DEFAULT_DSP_PROFILE: DspProfileKey = "Vocal Clarity";
 const INITIAL_DSP_VALUES = DSP_PRESETS[DEFAULT_DSP_PROFILE];
 
 export default function App() {
-  const { state, sendCommand } = useJukebox();
+  const { state, status, error, sendCommand } = useJukebox();
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const signalBayRef = useRef<HTMLElement | null>(null);
   const [activeTab, setActiveTab] = useState<"mixer" | "effects">("mixer");
@@ -68,6 +69,7 @@ export default function App() {
   const activeDspProfile = isDspProfileKey(state.media.audio.dspProfile)
     ? state.media.audio.dspProfile
     : DEFAULT_DSP_PROFILE;
+  const appStatus = buildAppShellStatusViewModel(state, status, error);
 
   const spinDuration = spinSpeed === 0 ? 0 : 12 - (spinSpeed / 100) * 10.8;
 
@@ -370,6 +372,7 @@ export default function App() {
             playlists={state.library.playlists}
             activeSongId={activeSongId}
             spotify={spotify}
+            appStatus={appStatus}
             onToggleTheme={toggleTheme}
             onSelectTrack={(trackId) => {
               void sendCommand({
@@ -403,6 +406,7 @@ export default function App() {
           telemetry={state.telemetry}
           media={state.media}
           activeDspProfile={activeDspProfile}
+          appStatus={appStatus}
         />
       </section>
     </div>

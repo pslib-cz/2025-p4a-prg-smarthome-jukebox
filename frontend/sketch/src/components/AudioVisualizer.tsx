@@ -397,7 +397,7 @@ export default function AudioVisualizer({
 
         // Draw the rounded bar
         const x = -HALF_BAR;
-        const y = 0;
+        const y = -barHeight;
         const w = BAR_WIDTH;
         const h = barHeight;
         const r = HALF_BAR;

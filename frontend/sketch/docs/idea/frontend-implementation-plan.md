@@ -187,12 +187,12 @@ Status:
 ### Step 7
 - Add loading, disconnected, and empty-state UI.
 Status:
-- next
+- done
 
 ### Step 8
 - Build HA adapter for baseline entities and MQTT events.
 Status:
-- pending
+- next
 
 ### Step 9
 - Replace mock telemetry with real telemetry.

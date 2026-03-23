@@ -67,9 +67,11 @@
 
 @media (max-width: 1180px) {
   .signal-bay-header {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
+  .signal-bay-header-cards,
+  .signal-bay-status-slot,
   .signal-bay-aside,
   .signal-bay-summary {
     width: 100%;
@@ -91,6 +93,10 @@
 @media (max-width: 860px) {
   .signal-bay-frame {
     padding: 24px;
+  }
+
+  .signal-bay-header-cards {
+    grid-template-columns: 1fr;
   }
 
   .room-pulse-layout {

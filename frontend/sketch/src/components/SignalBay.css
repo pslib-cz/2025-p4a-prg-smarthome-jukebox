@@ -76,9 +76,8 @@
 .signal-bay-header {
   position: relative;
   z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 680px);
   gap: 28px;
   margin-bottom: 28px;
 }
@@ -87,20 +86,41 @@
   max-width: 520px;
 }
 
+.signal-bay-header-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 16px;
+}
+
 .signal-bay-aside {
-  flex: 0 0 340px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
+  min-width: 0;
+}
+
+.signal-bay-status-slot {
+  min-width: 0;
+  align-self: flex-end;
+}
+
+.signal-bay-status-slot .app-status-banner {
+  justify-content: space-between;
+  border-radius: 6px;
+  background: var(--signal-surface);
+  box-shadow: var(--shadow-sm);
+  align-self: flex-end;
+}
+
+.signal-bay-status-slot .app-status-chip {
+  border-radius: 4px;
+  background: var(--signal-surface-strong);
 }
 
 .signal-bay-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
-  padding: 0 14px;
+  min-height: 34px;
+  padding: 0 12px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--signal-surface);
@@ -171,6 +191,7 @@
 
 .signal-bay-summary {
   width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -180,6 +201,13 @@
   background: var(--signal-surface);
   box-shadow: var(--shadow-sm);
   transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.signal-bay-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .signal-bay-badge {
