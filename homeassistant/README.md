@@ -4,6 +4,10 @@
 
 `homeassistant/` contains the central automation runtime plan for the project.
 
+Quick team setup guide:
+
+- VirtualBox setup on Windows: [SETUP-VIRTUALBOX.md](./SETUP-VIRTUALBOX.md)
+
 `Home Assistant` is the system source of truth for:
 
 - room state
@@ -198,6 +202,7 @@ homeassistant/
 
 - Home Assistant REST API: https://developers.home-assistant.io/docs/api/rest
 - Home Assistant WebSocket API: https://developers.home-assistant.io/docs/api/websocket/
+- Home Assistant Windows install: https://www.home-assistant.io/installation/windows/
 - Music Assistant integration: https://www.music-assistant.io/integration/
 - Music Assistant installation notes: https://www.music-assistant.io/integration/installation/
 - Project frontend master plan: ../frontend/sketch/docs/idea/master-plan.md

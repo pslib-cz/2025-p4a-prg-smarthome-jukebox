@@ -13,6 +13,7 @@ Projekt je postaven s důrazem na **lokální autonomii**, bezpečnost a uživat
 - Backend implementation scope: [backend/README.md](./backend/README.md)
 - Backend task list: [backend/TODO.md](./backend/TODO.md)
 - Home Assistant implementation scope: [homeassistant/README.md](./homeassistant/README.md)
+- Home Assistant VirtualBox setup: [homeassistant/SETUP-VIRTUALBOX.md](./homeassistant/SETUP-VIRTUALBOX.md)
 - Home Assistant task list: [homeassistant/TODO.md](./homeassistant/TODO.md)
 
 ---
