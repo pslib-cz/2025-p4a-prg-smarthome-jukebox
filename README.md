@@ -6,6 +6,17 @@ Projekt je postaven s důrazem na **lokální autonomii**, bezpečnost a uživat
 
 ---
 
+## 📚 Repo Entry Points
+
+- Frontend sketch plan: [frontend/sketch/README.md](./frontend/sketch/README.md)
+- Frontend master plan: [frontend/sketch/MASTER-PLAN.md](./frontend/sketch/MASTER-PLAN.md)
+- Backend implementation scope: [backend/README.md](./backend/README.md)
+- Backend task list: [backend/TODO.md](./backend/TODO.md)
+- Home Assistant implementation scope: [homeassistant/README.md](./homeassistant/README.md)
+- Home Assistant task list: [homeassistant/TODO.md](./homeassistant/TODO.md)
+
+---
+
 ## 🚀 Hlavní funkce
 
 - **Hybridní Audio Engine:** Streamování ze Spotify a lokálních MP3 knihoven skrze Music Assistant.
