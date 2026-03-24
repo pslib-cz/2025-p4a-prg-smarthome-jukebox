@@ -1,6 +1,6 @@
 # HAJukeBox Progress Tracker
 
-Last updated: 2026-03-23
+Last updated: 2026-03-24
 
 Purpose
 
@@ -59,17 +59,23 @@ Done
 - A shell-level status banner now exposes `live`, `syncing`, `offline`, `standby`, and `error` states from the provider-backed app state, and it now lives inside `Telemetry Deck` instead of the hero.
 - The local music panel now has explicit empty-state surfaces for songs and playlists, so real data gaps no longer collapse into blank sections.
 - Unit tests now also cover app-shell status derivation for loading, standby, offline, and error scenarios.
+- Typed remote contracts now exist for `Home Assistant telemetry snapshots` and `backend media/library snapshots`.
+- Pure mapper functions now translate HA entity payloads and backend media payloads into the shared frontend app-state contract.
+- A `RemoteJukeboxDataSource` scaffold now exists for merging HA telemetry and backend media into one provider-compatible data source.
+- Unit tests now also cover HA telemetry mapping, backend media mapping, and combined remote-state derivation.
 
 In progress
 
 - Define the exact Home Assistant entity and MQTT topic contract the frontend will expect.
 - Start separating purely decorative telemetry constants from baseline HA-driven telemetry data.
 - Decide how the first real telemetry adapter should expose freshness and reconnect timing into the shell state.
+- Replace the current remote data source scaffold transports with actual HA and backend HTTP/WebSocket clients.
 
 Next
 
-- Write the first Home Assistant adapter draft against the unified state contract.
 - Freeze a concrete HA entity list and MQTT topic list for the baseline local MP3 flow.
+- Bind the remote data source scaffold to real HA fetch/subscribe transport functions.
+- Bind the remote data source scaffold to the real backend media/library transport.
 - Reduce remaining static telemetry fallback data to only visual scaffolding markers and labels.
 - Add matching empty/offline placeholders inside `Telemetry Deck` panels once the HA telemetry contract is frozen.
 - Decide how the future real Spotify auth and SDK events will map onto the new Spotify sketch state.

@@ -1,6 +1,6 @@
 # HAJukeBox Frontend Implementation Plan
 
-Last updated: 2026-03-20
+Last updated: 2026-03-24
 Status: Active
 
 ## Goal
@@ -192,7 +192,7 @@ Status:
 ### Step 8
 - Build HA adapter for baseline entities and MQTT events.
 Status:
-- next
+- in progress
 
 ### Step 9
 - Replace mock telemetry with real telemetry.
@@ -203,6 +203,12 @@ Status:
 - Replace mock local playback with real HA-backed local playback.
 Status:
 - pending
+
+Progress note:
+- typed remote snapshot contracts now exist
+- HA telemetry and backend media mapper functions now exist
+- a provider-compatible remote data source scaffold now exists
+- the next implementation step is to replace scaffold transports with real HTTP/WebSocket clients
 
 ### Step 11
 - Freeze the baseline frontend.
