@@ -2,30 +2,42 @@
 
 ## Purpose
 
-`backend/` is the integration and media-service layer for the project.
+`backend/` is the dedicated local media-service layer for the project.
 
-It exists to support:
+It is the chosen baseline owner for:
 
-- local MP3 library and playback
-- normalized media state for the frontend
-- Home Assistant integration glue
-- optional Spotify auth/session support later
+- local MP3 catalog indexing
+- media playback state
+- media control commands
+- frontend-facing media API
+- later Spotify auth and session handling
 
-It must **not** become the primary source of truth for room state, presence logic, or automation logic.
+It is **not** the owner of automation truth, room state, or sensor fusion.
 `Home Assistant` keeps that role.
 
 ## Current Decision
 
-Baseline project success is:
+The architecture is frozen to:
 
-- `Local MP3 + Home Assistant + MQTT + ESP32 + frontend`
+- `Home Assistant` as the central automation runtime
+- `backend/` as the explicit media-state subsystem
+- `frontend/` consuming both domains through separate adapters
 
-Bonus work is:
+`Music Assistant` is not part of the baseline plan.
 
-- `Spotify Web Playback SDK`
-- `Google Assistant`
+If it was installed during experiments, do not model new code or docs around it.
 
-Because of that, the backend must be designed around the local MP3 path first.
+## Assignment Compatibility
+
+The school brief says the system must remain centrally controlled by `Home Assistant` without depending on an external cloud service or hidden off-platform runtime.
+
+For this project, that means:
+
+- the backend is a local project service running beside HA
+- HA still owns automation, entity state, and integration visibility
+- the backend owns media only
+- the frontend must not infer room or automation truth from backend-only data
+- essential media summaries and commands must be mirrored into `Home Assistant` for the demo path
 
 ## Backend Responsibilities
 
@@ -34,8 +46,8 @@ Because of that, the backend must be designed around the local MP3 path first.
 - scan and expose the local MP3 catalog
 - expose current media state in a frontend-friendly shape
 - accept media commands such as `play`, `pause`, `next`, `previous`, `seek`, and `set_volume`
-- keep a stable player identifier that Home Assistant can target
-- publish or mirror media state to Home Assistant
+- keep a stable player identifier that `Home Assistant` can target
+- mirror media state into `Home Assistant`
 - expose health and recent log information
 - fail gracefully when the local media library is missing or empty
 
@@ -43,10 +55,10 @@ Because of that, the backend must be designed around the local MP3 path first.
 
 - Spotify authorization helper
 - Spotify token refresh handling
-- Spotify session/device mirror for UI and HA visibility
+- Spotify session and device mirror for UI and HA visibility
 - source switching between local media and Spotify
 
-## What The Backend Should Not Own
+## What The Backend Must Not Own
 
 - presence confidence as the final truth
 - mode automations such as `focus`, `party`, or `eco`
@@ -56,32 +68,39 @@ Because of that, the backend must be designed around the local MP3 path first.
 
 ## Recommended Architecture
 
-### Preferred baseline
+### Baseline engine
 
-Use `Music Assistant Server` as the actual media engine if it satisfies:
+Implement a custom local media service for:
 
-- local library indexing
-- local playback
-- queue/player control
-- Home Assistant integration
+- filesystem scan
+- metadata extraction
+- cover-art resolution
+- normalized playback state
+- command handling
 
-Then keep this backend as a thin glue layer for:
+Keep the media contract stable from the start so the frontend does not care about internal implementation details.
 
-- frontend-friendly API shape
-- state normalization
-- event/log shaping
-- optional Spotify auth/session handling
+### Bridge to Home Assistant
 
-### Fallback baseline
+The backend should provide enough mirrored state for `Home Assistant` to remain the visible automation brain.
 
-If `Music Assistant` does not cover the required local MP3 demo path cleanly enough, build a small custom backend service for:
+Minimum bridge outputs:
 
-- local library scan
-- local playback control
-- normalized state export
-- HA bridge
+- current track metadata
+- playback status
+- progress and duration
+- active source label
+- volume
+- recent media event entries
+- backend health
 
-If this fallback is chosen, keep the API contract below unchanged so the frontend does not care which engine is underneath.
+The backend should also accept commands originating from `Home Assistant` for:
+
+- play/pause
+- next/previous
+- seek
+- volume
+- source selection later
 
 ## API Contract
 
@@ -128,33 +147,11 @@ Recommended baseline event names:
 
 These events can be implemented using:
 
-- WebSocket
-- Server-Sent Events
+- `WebSocket`
+- `Server-Sent Events`
 - polling first, then realtime later
 
 The contract matters more than the first transport choice.
-
-## Home Assistant Bridge
-
-The backend should expose or mirror enough data for Home Assistant to become the visible automation brain.
-
-Minimum bridge outputs:
-
-- current track metadata
-- playback status
-- progress and duration
-- active source label
-- volume
-- recent media event entries
-- backend health
-
-The backend should also accept commands originating from Home Assistant for:
-
-- play/pause
-- next/previous
-- seek
-- volume
-- source selection later
 
 ## Suggested Folder Layout
 
@@ -173,7 +170,7 @@ backend/
   tests/
 ```
 
-## Definition of Done
+## Definition Of Done
 
 ### Baseline done
 
@@ -181,7 +178,7 @@ backend/
 - local MP3 playback can be controlled programmatically
 - frontend can read true media state from the backend contract
 - Home Assistant can trigger the same playback commands
-- the backend can survive empty library and disconnected-player cases
+- the backend can survive empty-library and disconnected-player cases
 
 ### Bonus done
 
@@ -192,15 +189,15 @@ backend/
 
 ## Risks
 
-- do not duplicate `Music Assistant` features without a concrete reason
-- do not let the backend become a second automation brain beside Home Assistant
+- do not let the backend become a second automation brain beside `Home Assistant`
+- do not invent backend-only room logic that bypasses HA
 - keep Spotify secrets server-side only
 - keep local MP3 as the required path even if Spotify stalls
 
 ## Sources
 
-- Music Assistant integration: https://www.music-assistant.io/integration/
-- Music Assistant API: https://www.music-assistant.io/api/
 - Spotify authorization concepts: https://developer.spotify.com/documentation/web-api/concepts/authorization
 - Spotify Web Playback SDK: https://developer.spotify.com/documentation/web-playback-sdk
-- Project frontend master plan: ../frontend/sketch/docs/idea/master-plan.md
+- Home Assistant REST API: https://developers.home-assistant.io/docs/api/rest
+- Home Assistant WebSocket API: https://developers.home-assistant.io/docs/api/websocket/
+- Project master plan: ../docs/idea/master-plan.md

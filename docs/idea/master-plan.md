@@ -1,12 +1,12 @@
 # HAJukeBox Master Plan
 
-Last updated: 2026-03-20
-Status: Draft v1.1
+Last updated: 2026-03-26
+Status: Draft v1.2
 
 ## Context Note
-- This plan was built from the current repository, recent frontend state, and technical decisions discussed in chat.
-- `docs/idea/idea-1.md`, `docs/idea/idea-2.md`, and `docs/assignment/assignment.md` were empty at the time of writing.
-- Final alignment against the original Notion notes and the exact school brief is still pending.
+- This plan is aligned against the current repository, the school assignment, and the decisions confirmed in chat.
+- Older idea documents may still contain historical assumptions that are no longer valid.
+- The architecture is now frozen unless the team explicitly decides otherwise.
 - Confirmed constraints from the team:
   - exactly `1x ESP32`
   - `Google Assistant` is welcome, but not required for baseline success
@@ -15,18 +15,25 @@ Status: Draft v1.1
   - the team wants `Spotify` and `local MP3` to end up on the same speaker path if possible
 
 ## Assignment Compliance Correction
-The school assignment adds one important baseline constraint:
-- Home Assistant must remain the central system
-- The required dashboard/client should work without depending on an external custom server or database as the primary runtime backbone
+The school assignment adds these important baseline constraints:
 
-Practical interpretation for this project:
-- `Baseline architecture`: frontend talks directly to Home Assistant and/or MQTT over WebSockets for required functionality
-- `Optional extension`: a dedicated local server may still exist later for bonus features, but it must not become a hidden hard dependency for the core assignment flow
+- `Home Assistant` must remain the central system
+- the project should avoid depending on external cloud systems or hidden off-platform runtime truth
+- the dashboard should stay explainable as part of the HA-centered architecture
+
+Chosen interpretation for this project:
+
+- `Home Assistant` remains the visible automation and monitoring brain
+- the custom local server is allowed as a local media subsystem because it owns only the media domain
+- the frontend reads `Home Assistant` for automation, telemetry, and room state
+- the frontend reads the local server for media library and playback state
+- for strict assignment defense, the backend must mirror essential media state and commands back into `Home Assistant`
 
 This matters most for frontend planning:
-- real data preparation should start with `HA-backed contracts`
-- `local MP3 + telemetry + control` should be implementable with HA as the primary integration point
-- Spotify and any extra backend layer should be treated as an extension after the baseline flow works
+
+- real data preparation must keep `HA` and backend adapters separate
+- `local MP3 + telemetry + control` is still the baseline delivery path
+- Spotify remains a bonus extension on top of the same media-server contract
 
 ## Executive Summary
 HAJukeBox should be built as a multi-layer local smart jukebox system with a strong visual frontend, a local application server, Home Assistant for automation and device orchestration, and one ESP32 node for physical sensing and actuator control.
@@ -38,8 +45,8 @@ The project should support two media paths:
 The recommended architecture is:
 - `Frontend`: visual UI, user controls, browser-side Spotify player host, live telemetry presentation
 - `Home Assistant`: required central automation/runtime system, entity state, MQTT broker integration, room/device logic
+- `Local server`: baseline media subsystem for local MP3 and later Spotify session handling
 - `ESP32`: raw sensor acquisition and hardware actuation, not business-logic orchestration
-- `Optional local server`: only if later needed for bonus media features beyond the HA-centered baseline
 
 ## Project Goals
 1. Deliver a music-first interface that still proves monitoring, automation, and logging quality.
@@ -76,8 +83,9 @@ Recommended role:
 - React/Vite/TypeScript client
 - Visual sketch, now evolving into the real control surface
 - Browser host for Spotify Web Playback SDK
-- Receives live updates from the local server through WebSocket or SSE
-- Sends user commands to the local server
+- Receives live updates from `Home Assistant` and the local server through explicit adapters
+- Sends automation-oriented commands to `Home Assistant`
+- Sends media-oriented commands to the local server
 
 Recommended rules:
 - Treat frontend state as presentational cache, not business truth
@@ -102,6 +110,7 @@ Why this is the best fit:
 - Same language as frontend
 - Good fit for Spotify APIs and real-time frontend state
 - Easier team sharing than a fragmented backend stack
+- Keeps media concerns out of `Home Assistant` without moving automation truth away from HA
 
 ### Home Assistant
 Recommended role:
@@ -491,7 +500,6 @@ These are stretch outcomes, not baseline blockers:
 These need answers before the plan is final:
 - Will the demo environment allow external HTTPS access if required for some integrations?
 - Does `Spotify through ESP` mean the exact same physical speaker output, or is it acceptable if Spotify stays browser-hosted while the ESP remains the room-control node?
-- Do you want Home Assistant to be the visible automation brain, or should most logic stay hidden behind the local server?
 - Do you want local voice fallback included if Google Assistant slips?
 
 ## References

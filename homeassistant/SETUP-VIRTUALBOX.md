@@ -1,15 +1,15 @@
 # Home Assistant Setup On Windows With VirtualBox
 
-Last updated: 2026-03-24
+Last updated: 2026-03-26
 
 This guide is the shared team setup path for running `Home Assistant OS` locally on a Windows machine with `VirtualBox`.
 
 Use this guide if you want a stable development environment with:
 
-- Home Assistant
-- MQTT later
-- Music Assistant later
-- the option to move the same HA setup to dedicated hardware after development
+- `Home Assistant`
+- `MQTT`
+- a clean bridge to the custom `backend/`
+- the option to move the same HA setup to dedicated hardware later
 
 ## Why This Path
 
@@ -23,9 +23,9 @@ Do **not** use `WSL` as the main Home Assistant runtime for this project.
 
 Why:
 
-- `Home Assistant OS` is the most straightforward path for apps/add-ons
-- `Music Assistant` fits better into this setup later
+- `Home Assistant OS` is the most straightforward path for HA add-ons and integrations
 - the team needs a repeatable setup, not a custom one-off environment
+- the chosen architecture depends on stable `MQTT`, HA APIs, and local networking
 
 ## Before You Start
 
@@ -33,7 +33,7 @@ You need:
 
 - a Windows machine
 - `VirtualBox` installed
-- hardware virtualization enabled in BIOS/UEFI if VirtualBox complains
+- hardware virtualization enabled in BIOS or UEFI if VirtualBox complains
 - at least `2 GB RAM` and `2 vCPU` available for the VM
 
 Recommended for this project:
@@ -42,8 +42,9 @@ Recommended for this project:
 - `2 vCPU`
 
 Reason:
-- This is an inference, not an official hard requirement.
-- The official Home Assistant minimum is lighter, but this project will likely add MQTT and Music Assistant, so more headroom is safer.
+
+- this is an inference, not an official hard requirement
+- the official Home Assistant minimum is lighter, but this project will add MQTT and local integrations, so more headroom is safer
 
 ## Download Links
 
@@ -98,7 +99,7 @@ Then enable:
 
 - `EFI`
 
-If the VM later refuses to boot, re-check that virtualization is enabled in BIOS/UEFI.
+If the VM later refuses to boot, re-check that virtualization is enabled in BIOS or UEFI.
 
 ### 5. Attach The Home Assistant Disk
 
@@ -118,15 +119,18 @@ Open:
 
 - `Settings -> Network`
 
-Set:
+Use this configuration:
 
-- `Attached to`: `Bridged Adapter`
-- `Name`: your active network adapter
+- `Adapter 1`: enabled, `NAT`
+- `Adapter 2`: enabled, `Bridged Adapter`
+- `Adapter 2 Name`: your active network adapter
 
-Why:
+Why this is recommended:
 
-- the VM should appear on your local network
-- Home Assistant discovery and local integrations work more cleanly this way
+- `NAT` gives the VM reliable outbound internet access for add-on downloads and updates
+- `Bridged Adapter` keeps HA visible on the local network
+
+This project already hit a real case where `Bridged Adapter` alone made add-on downloads fail with `network is unreachable` errors against `github.com` and `ghcr.io`.
 
 ### 7. Start The Virtual Machine
 
@@ -150,7 +154,7 @@ If that does not resolve, try:
 To find the IP:
 
 - check the VM console
-- or inspect your router / local network client list
+- or inspect your router or local network client list
 
 ### 9. Finish The Home Assistant Onboarding
 
@@ -176,24 +180,18 @@ Install available updates before adding project-specific integrations.
 After Home Assistant works, the next team setup steps are:
 
 1. `MQTT`
-2. `Music Assistant`
+2. one additional local HA integration for assignment compliance, recommended `Ping`
+3. backend bridge work
 
-Official Music Assistant docs:
+Do not treat `Music Assistant` as part of the baseline.
 
-- server install: https://www.music-assistant.io/installation/
-- Home Assistant integration: https://www.music-assistant.io/integration/installation/
-
-Do not start custom frontend binding until at least:
-
-- Home Assistant boots reliably
-- you can log in after restart
-- you know the VM IP or hostname
+If someone already installed it during testing, it can be removed from HA to keep the environment aligned with the chosen architecture.
 
 ## Recommended Team Rule
 
 Each teammate should do this once:
 
-1. boot Home Assistant successfully
+1. boot `Home Assistant` successfully
 2. log in through port `8123`
 3. make one screenshot of the working HA dashboard
 4. note down the VM IP
@@ -214,9 +212,33 @@ Check:
 - BIOS virtualization is enabled
 - the correct `.vdi` disk is attached
 
+### Add-ons or repositories fail to download
+
+Check the HA VM network configuration first.
+
+Recommended setup:
+
+- `Adapter 1 = NAT`
+- `Adapter 2 = Bridged Adapter`
+
+Then verify connectivity from the HA console:
+
+```bash
+login
+ha network info
+ping -c 2 1.1.1.1
+ping -c 2 github.com
+```
+
+If `github.com` or `ghcr.io` still fails:
+
+- check whether the Windows host has internet access
+- disable VPN temporarily
+- verify the current network does not block GitHub or container registry access
+
 ### Network discovery behaves strangely
 
-Double-check that the VM uses `Bridged Adapter`, not just the default NAT mode.
+Double-check that the VM uses both `NAT` and `Bridged Adapter`, not only one of them.
 
 ## After This Guide
 
@@ -233,7 +255,3 @@ Once all three teammates can boot HA locally, continue with:
   https://www.home-assistant.io/installation/
 - Home Assistant supported install direction:
   https://www.home-assistant.io/blog/2025/05/22/deprecating-core-and-supervised-installation-methods-and-32-bit-systems/
-- Music Assistant install:
-  https://www.music-assistant.io/installation/
-- Music Assistant HA integration:
-  https://www.music-assistant.io/integration/installation/

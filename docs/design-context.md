@@ -34,8 +34,9 @@ This is intentionally a design prototype first. Presentational quality matters m
 - Spotify connect button used as a visual CTA, not a real integration.
 
 ## Important State Assumptions
-- Current data is mocked directly in `src/App.tsx`.
-- Interactions are local UI state only.
+- Current app data flows through the shared provider and mock data source in `frontend/sketch/src/state/`.
+- Important media and telemetry state no longer lives only in `src/App.tsx`.
+- Some purely presentational interactions still use local component state.
 - Spotify connection, songs, progress, and playlist content are placeholders.
 - The prototype should feel believable without becoming functionally complex too early.
 

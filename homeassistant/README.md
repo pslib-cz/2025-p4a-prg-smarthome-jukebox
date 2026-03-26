@@ -13,12 +13,12 @@ Quick team setup guide:
 - room state
 - automation state
 - mode state
-- normalized sensor/device health
+- normalized sensor and device health
 
 It is also the main integration point between:
 
 - frontend
-- backend/media service
+- backend media service
 - MQTT broker
 - ESP32
 
@@ -33,22 +33,53 @@ Bonus work is:
 - `Spotify Web Playback SDK`
 - `Google Assistant`
 
-That means Home Assistant should be configured for the baseline local MP3 path first.
+The chosen architecture uses a custom local backend for media state and playback.
+`Home Assistant` still remains the visible automation brain.
+
+`Music Assistant` is not part of the selected baseline. If it was installed for testing, it can be removed.
+
+## Assignment Compliance For 3 People
+
+For `N = 3`, the school brief requires at least:
+
+- `2` local HA integrations
+- `3` scenarios
+- `6` entities
+
+Recommended compliance baseline:
+
+- local integrations:
+  - `MQTT`
+  - one additional local integration, recommended `Ping`
+- scenarios:
+  - `Focus`
+  - `Party`
+  - `Eco / Presence`
+- entities:
+  - distance
+  - clap count
+  - RSSI
+  - uptime
+  - mode
+  - media source or media state
+
+Do not count the custom backend as one of the required HA integrations.
 
 ## Home Assistant Responsibilities
 
 ### Required for baseline
 
-- ingest MQTT sensor/device data from ESP32
+- ingest `MQTT` sensor and device data from `ESP32`
 - normalize state into entities the frontend and automations can rely on
-- expose state through REST and WebSocket APIs
+- expose state through `REST` and `WebSocket` APIs
 - run scripts and automations for the local MP3 path
 - keep mode logic such as `focus`, `party`, `eco`, and presence-related decisions
 - log meaningful automation events
+- mirror backend media summaries into HA entities or scripts
 
 ### Optional later
 
-- expose selected entities to Assist or Google Assistant
+- expose selected entities to `Assist` or `Google Assistant`
 - mirror Spotify source state
 - trigger Spotify-related scripts once the browser player path exists
 
@@ -57,11 +88,14 @@ That means Home Assistant should be configured for the baseline local MP3 path f
 Recommended baseline integrations:
 
 - `MQTT`
-- `Music Assistant` if adopted as the playback engine
-- default `Recorder` and `Logbook` support for debugging
+- `Recorder`
+- `Logbook`
+- one additional local integration for assignment compliance, recommended `Ping`
 
 Recommended optional integrations later:
 
+- `ESPHome` if the final firmware path uses it
+- `Local Tuya` if the team adds a local smart plug or other local Tuya device
 - `Assist`
 - Google exposure path
 
@@ -73,6 +107,7 @@ Use stable names early so frontend, backend, and HA automations do not drift.
 
 - `media_player.hajukebox_main`
 - `sensor.hajukebox_media_source`
+- `sensor.hajukebox_backend_status`
 
 ### Sensor and presence state
 
@@ -96,9 +131,8 @@ Use stable names early so frontend, backend, and HA automations do not drift.
 ### Optional summary mirrors
 
 - `sensor.hajukebox_last_event`
-- `sensor.hajukebox_backend_status`
 
-Append-only logs should not be modeled as dozens of Home Assistant sensors.
+Append-only logs should not be modeled as many separate Home Assistant sensors.
 Use MQTT or backend event streams for the raw feed and mirror only summary state into HA when needed.
 
 ## Scripts And Automations
@@ -114,7 +148,7 @@ Use MQTT or backend event streams for the raw feed and mirror only summary state
 
 ### Baseline automations
 
-- presence update from MQTT/device state
+- presence update from MQTT and device state
 - focus-mode activation from proximity rules
 - eco shutdown when presence is truly gone
 - event logging for every visible automation action
@@ -149,12 +183,24 @@ Recommended rule:
 
 ## Frontend Access
 
-The frontend should mainly read Home Assistant through:
+The frontend should mainly read `Home Assistant` for:
 
-- `WebSocket API` for live updates
-- `REST API` for initial fetches or fallback calls
+- telemetry
+- presence
+- automation state
+- mode state
+- health state
 
-This keeps Home Assistant visible as the runtime brain instead of hiding all truth behind a custom backend.
+The frontend should read the custom backend for:
+
+- local library
+- active media state
+- media commands
+- Spotify session state later
+
+This keeps `Home Assistant` visible as the runtime brain while still allowing the backend to own the media domain explicitly.
+
+If the assignment is interpreted strictly during grading, `Home Assistant` must still expose enough mirrored media state and scripts so the system can be defended as HA-centered.
 
 ## Suggested Folder Layout
 
@@ -175,14 +221,14 @@ homeassistant/
     jukebox_commands.yaml
 ```
 
-## Definition of Done
+## Definition Of Done
 
 ### Baseline done
 
-- MQTT sensor topics arrive in Home Assistant
+- MQTT sensor topics arrive in `Home Assistant`
 - stable HA entities exist for the frontend adapter
-- local MP3 commands can be issued from HA scripts
-- at least one visible presence automation works end-to-end
+- local MP3 commands can be issued from HA scripts into the backend bridge
+- at least one visible presence automation works end to end
 - log entries exist for real automation events
 
 ### Bonus done
@@ -193,7 +239,7 @@ homeassistant/
 
 ## Risks
 
-- do not split automation truth between backend and Home Assistant
+- do not split automation truth between backend and `Home Assistant`
 - do not model append-only logs as many separate entities
 - do not block baseline progress on Spotify or Google
 - freeze entity names early or the frontend adapter will churn
@@ -203,6 +249,5 @@ homeassistant/
 - Home Assistant REST API: https://developers.home-assistant.io/docs/api/rest
 - Home Assistant WebSocket API: https://developers.home-assistant.io/docs/api/websocket/
 - Home Assistant Windows install: https://www.home-assistant.io/installation/windows/
-- Music Assistant integration: https://www.music-assistant.io/integration/
-- Music Assistant installation notes: https://www.music-assistant.io/integration/installation/
-- Project frontend master plan: ../frontend/sketch/docs/idea/master-plan.md
+- Home Assistant Ping integration: https://www.home-assistant.io/integrations/ping/
+- Project master plan: ../docs/idea/master-plan.md

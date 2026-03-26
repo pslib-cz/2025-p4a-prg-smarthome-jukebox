@@ -4,17 +4,17 @@ Stylized frontend prototype for a smart jukebox project built with `React`, `Typ
 
 The current repository focus is:
 - preserve the music-console visual identity
-- prepare the UI for real `Home Assistant` and `MQTT` data
+- prepare the UI for real `Home Assistant`, backend, and `MQTT` data
 - deliver `local MP3` as the baseline media path
 - treat `Spotify` and `Google Assistant` as bonus integrations
 
 ## Key Documents
 
 - Master plan: [MASTER-PLAN.md](./MASTER-PLAN.md)
-- Detailed architecture plan: [docs/idea/master-plan.md](./docs/idea/master-plan.md)
-- Frontend implementation plan: [docs/idea/frontend-implementation-plan.md](./docs/idea/frontend-implementation-plan.md)
-- Progress tracker: [docs/progress.md](./docs/progress.md)
-- Prioritized requirements: [docs/requirements.txt](./docs/requirements.txt)
+- Detailed architecture plan: [docs/idea/master-plan.md](../../docs/idea/master-plan.md)
+- Frontend implementation plan: [docs/idea/frontend-implementation-plan.md](../../docs/idea/frontend-implementation-plan.md)
+- Progress tracker: [docs/progress.md](../../docs/progress.md)
+- Prioritized requirements: [docs/requirements.txt](../../docs/requirements.txt)
 
 ## Current Frontend Direction
 

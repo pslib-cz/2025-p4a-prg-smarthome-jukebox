@@ -1,14 +1,15 @@
 # HAJukeBox Frontend Implementation Plan
 
-Last updated: 2026-03-24
+Last updated: 2026-03-26
 Status: Active
 
 ## Goal
-Move the current frontend from a visual sketch with local mock state to a client prepared for real Home Assistant and MQTT data.
+Move the current frontend from a visual sketch with local mock state to a client prepared for real `Home Assistant`, backend, and `MQTT` data.
 
 ## Baseline Rule
 - The required frontend path must work with `Home Assistant` as the central system.
-- Do not make a custom local server a hidden dependency for the baseline flow.
+- The custom backend is the chosen owner of media state for `Local MP3` and later `Spotify`.
+- Do not let the backend replace `Home Assistant` as the source of automation or telemetry truth.
 - `Local MP3 + telemetry + control` comes before Spotify and Google Assistant.
 
 ## Frontend Priorities
@@ -16,7 +17,8 @@ Move the current frontend from a visual sketch with local mock state to a client
 2. Separate `UI rendering` from `data source`.
 3. Make the UI able to consume:
    - mock data now
-   - Home Assistant data later
+   - `Home Assistant` data later
+   - backend media data later
    - optional bonus sources later
 4. Keep current design and interaction feel while rewiring the data layer.
 
@@ -46,7 +48,8 @@ Goal:
 Tasks:
 1. Create shared TypeScript types for app state, telemetry state, media state, and commands.
 2. Stop adding new hardcoded values directly inside UI components.
-3. Decide what the frontend actually expects from HA.
+3. Decide what the frontend expects from `Home Assistant`.
+4. Decide what the frontend expects from the backend media contract.
 
 Done when:
 - there is one state contract for the whole app
@@ -102,10 +105,12 @@ Goal:
 
 Tasks:
 1. Decide which data comes from:
-   - HA REST API
-   - HA WebSocket API
-   - MQTT over WebSockets
-2. Build an adapter that maps HA payloads into the frontend app-state contract.
+   - `HA REST API`
+   - `HA WebSocket API`
+   - `MQTT over WebSockets`
+   - backend `REST` API
+   - backend realtime transport
+2. Build adapters that map HA and backend payloads into the frontend app-state contract.
 3. Add connection status handling:
    - `connecting`
    - `connected`
@@ -113,7 +118,7 @@ Tasks:
    - `error`
 
 Done when:
-- the frontend can consume real HA-shaped data through one adapter
+- the frontend can consume real HA and backend data through explicit adapters
 
 ### Phase 5: Real Telemetry Wiring
 Goal:
@@ -132,8 +137,8 @@ Goal:
 - Make the required local media path real.
 
 Tasks:
-1. Decide how HA exposes local MP3 playback state.
-2. Bind hero controls to that entity or media command path.
+1. Decide how the backend exposes local MP3 playback state.
+2. Bind hero controls to that media command path.
 3. Show real metadata, progress, source, and playback state.
 4. Keep graceful empty/loading states.
 
@@ -190,7 +195,7 @@ Status:
 - done
 
 ### Step 8
-- Build HA adapter for baseline entities and MQTT events.
+- Build HA telemetry adapter and backend media adapter.
 Status:
 - in progress
 
@@ -200,7 +205,7 @@ Status:
 - pending
 
 ### Step 10
-- Replace mock local playback with real HA-backed local playback.
+- Replace mock local playback with real backend-backed local playback.
 Status:
 - pending
 

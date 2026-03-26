@@ -8,19 +8,20 @@ Status legend:
 
 ## Phase 0: Runtime Freeze
 
-- [ ] Decide where Home Assistant runs:
+- [ ] Decide where `Home Assistant` runs for the demo:
   dedicated host, mini PC, VM, or other always-on local machine
-- [ ] Decide whether `Music Assistant` is the primary local playback engine
 - [ ] Freeze entity names before frontend and backend adapters are written
 - [ ] Freeze MQTT topic names before ESP32 and HA packages are written
+- [ ] Freeze the second local HA integration needed for team-of-3 compliance
 
 ## Phase 1: Base Setup
 
-- [ ] Install and boot Home Assistant
+- [x] Install and boot `Home Assistant`
 - [ ] Create or reserve the final config structure inside this folder
-- [ ] Install and configure the MQTT integration
-- [ ] Install and configure Music Assistant if it is used for baseline playback
+- [x] Install and configure the `MQTT` integration
+- [ ] Add the second local HA integration, recommended `Ping`
 - [ ] Verify API access for frontend development
+- [ ] Remove `Music Assistant` if it was installed only for testing
 
 ## Phase 2: MQTT Ingest
 
@@ -28,7 +29,7 @@ Status legend:
 - [ ] Map `clap` topic into a stable event or helper flow
 - [ ] Map `rssi` topic into a diagnostic sensor
 - [ ] Map `uptime` topic into a diagnostic sensor
-- [ ] Map broker/device health into a visible HA state
+- [ ] Map broker and device health into a visible HA state
 - [ ] Validate reconnect behavior when MQTT temporarily drops
 
 ## Phase 3: Helpers And Entity Model
@@ -37,7 +38,7 @@ Status legend:
 - [ ] Create media source summary entity
 - [ ] Create presence confidence and reason entities
 - [ ] Create clap count helper or mirrored daily count
-- [ ] Create backend-status helper if the backend exposes health
+- [ ] Create backend-status helper
 - [ ] Keep names stable and frontend-friendly
 
 ## Phase 4: Scripts
@@ -48,12 +49,12 @@ Status legend:
 - [ ] Add `previous`
 - [ ] Add `set_volume`
 - [ ] Add `set_mode`
-- [ ] Validate script calls from both HA UI and external clients
+- [ ] Validate script calls from both HA UI and the backend bridge
 
 ## Phase 5: Automations
 
 - [ ] Presence-triggered focus mode
-- [ ] Eco/off when presence is truly gone
+- [ ] Eco or off when presence is truly gone
 - [ ] Clap-triggered shortcut if still desired
 - [ ] Media-state event logging
 - [ ] Disconnect and recovery logging
@@ -70,8 +71,8 @@ Status legend:
   uptime
   MQTT connected state
   mode
-  media state
-- [ ] Decide which event-log items come from HA and which stay in MQTT/backend streams
+  backend status
+- [ ] Decide which event-log items come from HA and which stay in MQTT or backend streams
 
 ## Phase 7: Bonus Paths
 

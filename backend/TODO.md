@@ -8,8 +8,8 @@ Status legend:
 
 ## Phase 0: Freeze The Backend Role
 
-- [ ] Decide whether the baseline media engine is `Music Assistant first` or `custom local MP3 service`
-- [ ] Confirm how Home Assistant will target playback commands
+- [x] Freeze the backend as the baseline media engine
+- [ ] Confirm how `Home Assistant` will target playback commands
 - [ ] Confirm how the frontend will read media state from the backend
 - [ ] Freeze one API contract before writing real service code
 
@@ -23,8 +23,7 @@ Status legend:
 
 ## Phase 2: Local MP3 Catalog
 
-- [ ] Pick the catalog source:
-  `Music Assistant` or direct filesystem scan
+- [ ] Implement direct filesystem scan for the chosen media folder
 - [ ] Return normalized track objects
 - [ ] Return normalized playlist objects or expose an empty list cleanly
 - [ ] Handle missing cover art
@@ -32,7 +31,7 @@ Status legend:
 - [ ] Add unit tests for:
   expected library load
   empty library
-  invalid/missing media path
+  invalid or missing media path
 
 ## Phase 3: Local Playback State And Commands
 
@@ -48,8 +47,8 @@ Status legend:
 
 ## Phase 4: Home Assistant Bridge
 
-- [ ] Decide whether HA talks to the backend via REST, webhook, MQTT mirror, or a mixed path
-- [ ] Mirror current media state to Home Assistant
+- [ ] Decide whether HA talks to the backend via `REST`, `webhook`, `MQTT mirror`, or a mixed path
+- [ ] Mirror current media state to `Home Assistant`
 - [ ] Accept HA-originated playback commands
 - [ ] Publish recent media events in a way that HA can log or display
 - [ ] Add tests for:
@@ -66,7 +65,7 @@ Status legend:
 - [ ] Emit `log.entry.created`
 - [ ] Add tests for:
   normal subscription flow
-  disconnect/reconnect flow
+  disconnect and reconnect flow
   invalid subscriber or transport error
 
 ## Phase 6: Observability
@@ -81,11 +80,11 @@ Status legend:
 - [ ] Add `Authorization Code with PKCE` flow
 - [ ] Store refresh tokens server-side only
 - [ ] Expose browser-player session state for the frontend
-- [ ] Mirror Spotify source state to Home Assistant
+- [ ] Mirror Spotify source state to `Home Assistant`
 - [ ] Keep Spotify optional so local MP3 still demos cleanly if this fails
 
 ## Stop Rules
 
-- [ ] Do not start Spotify work until local MP3 playback and HA bridge are stable
-- [ ] Do not invent custom backend-only automation logic that bypasses Home Assistant
+- [ ] Do not start Spotify work until local MP3 playback and the HA bridge are stable
+- [ ] Do not invent custom backend-only automation logic that bypasses `Home Assistant`
 - [ ] Do not commit to direct Spotify audio on ESP32 as a baseline assumption
