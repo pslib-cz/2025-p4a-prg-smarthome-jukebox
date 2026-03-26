@@ -222,6 +222,40 @@ describe("buildJukeboxStateFromRemoteSnapshots", () => {
     expect(nextState.media.progressPercent).toBe(48);
   });
 
+  it("overrides telemetry event log with backend log when backend provides it", () => {
+    const nextState = buildJukeboxStateFromRemoteSnapshots(mockJukeboxState, {
+      ha: {
+        connectionStatus: "connected",
+        entities: [],
+        eventLog: [
+          {
+            time: "08:10",
+            action: "HA event",
+            meta: "HA side",
+          },
+        ],
+      },
+      backend: {
+        connectionStatus: "connected",
+        eventLog: [
+          {
+            time: "08:12",
+            action: "Play",
+            meta: "Track 4",
+          },
+        ],
+      },
+    });
+
+    expect(nextState.telemetry.eventLog).toEqual([
+      {
+        time: "08:12",
+        action: "Play",
+        meta: "Track 4",
+      },
+    ]);
+  });
+
   it("marks the combined system as connecting when only one side is ready", () => {
     expect(deriveConnectionStatus("connected", "connecting")).toBe("connecting");
   });

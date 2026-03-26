@@ -10,4 +10,4 @@ Use these documents for active project decisions:
 - `/README.md`
 - `/backend/README.md`
 - `/homeassistant/README.md`
-- `/frontend/sketch/MASTER-PLAN.md`
+- `/frontend/MASTER-PLAN.md`

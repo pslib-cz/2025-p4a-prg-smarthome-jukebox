@@ -55,7 +55,7 @@ Done
 - Unit tests now cover core reducer behavior for track cycling, value clamping, and invalid track commands.
 - Unit tests now also cover `Telemetry Deck` view-model mapping and chart-point generation.
 - Unit tests now also cover Spotify sketch state/view-model transitions.
-- Repository documentation entrypoints now exist in `README.md` and `frontend/sketch/MASTER-PLAN.md`.
+- Repository documentation entrypoints now exist in `README.md` and `frontend/MASTER-PLAN.md`.
 - A shell-level status banner now exposes `live`, `syncing`, `offline`, `standby`, and `error` states from the provider-backed app state, and it now lives inside `Telemetry Deck` instead of the hero.
 - The local music panel now has explicit empty-state surfaces for songs and playlists, so real data gaps no longer collapse into blank sections.
 - Unit tests now also cover app-shell status derivation for loading, standby, offline, and error scenarios.

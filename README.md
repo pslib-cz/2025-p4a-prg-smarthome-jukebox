@@ -6,15 +6,15 @@ Směr projektu je nyní zafixovaný do jedné architektury:
 
 - `Home Assistant` je centrální runtime pro automatizaci a monitoring
 - `backend/` vlastní stav médií a orchestrace přehrávání pro `Local MP3` a později `Spotify`
-- `frontend/sketch/` je hlavní uživatelský dashboard
+- `frontend/` je hlavní uživatelský dashboard
 - `ESP32` publikuje telemetrii senzorů a zařízení přes `MQTT`
 
 `Music Assistant` už není součástí základní architektury. Pokud byl nainstalovaný jen kvůli experimentům, berte ho jako dočasný a odstraňte ho, aby nevznikal zmatek.
 
 ## Hlavní vstupní body repozitáře
 
-- Frontendový prototyp: [frontend/sketch/README.md](./frontend/sketch/README.md)
-- Frontendový souhrnný plán: [frontend/sketch/MASTER-PLAN.md](./frontend/sketch/MASTER-PLAN.md)
+- Frontendový prototyp: [frontend/README.md](./frontend/README.md)
+- Frontendový souhrnný plán: [frontend/MASTER-PLAN.md](./frontend/MASTER-PLAN.md)
 - Hlavní architektonický plán: [docs/idea/master-plan.md](./docs/idea/master-plan.md)
 - Rozsah backendu: [backend/README.md](./backend/README.md)
 - Seznam úkolů backendu: [backend/TODO.md](./backend/TODO.md)
@@ -174,4 +174,4 @@ Doménové dokumenty níže používejte jen jako rozšíření master plánu, n
 
 1. [backend/README.md](./backend/README.md)
 2. [homeassistant/README.md](./homeassistant/README.md)
-3. [frontend/sketch/MASTER-PLAN.md](./frontend/sketch/MASTER-PLAN.md)
+3. [frontend/MASTER-PLAN.md](./frontend/MASTER-PLAN.md)

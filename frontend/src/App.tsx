@@ -30,6 +30,7 @@ import {
 } from "./components/Icons";
 import { useJukebox } from "./state/useJukebox";
 import { buildAppShellStatusViewModel } from "./state/appShellStatus";
+import { useLocalAudioPlayback } from "./state/useLocalAudioPlayback";
 
 const THEMES = ["casual", "disco", "focus", "eco"] as const;
 type Theme = (typeof THEMES)[number];
@@ -39,6 +40,10 @@ const INITIAL_DSP_VALUES = DSP_PRESETS[DEFAULT_DSP_PROFILE];
 
 export default function App() {
   const { state, status, error, sendCommand } = useJukebox();
+  const { audioRef } = useLocalAudioPlayback({
+    media: state.media,
+    sendCommand,
+  });
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const signalBayRef = useRef<HTMLElement | null>(null);
   const [activeTab, setActiveTab] = useState<"mixer" | "effects">("mixer");
@@ -171,6 +176,7 @@ export default function App() {
 
   return (
     <div className="app-shell" data-theme={theme} ref={appShellRef}>
+      <audio ref={audioRef} preload="metadata" />
       <section className="hero-screen">
         <div className="app" data-theme={theme}>
           <div className="controls-panel">

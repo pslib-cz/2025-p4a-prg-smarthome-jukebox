@@ -1,7 +1,7 @@
 # HAJukeBox Master Plan
 
-This file is the frontend-facing summary entrypoint for the sketch work.
-The primary project architecture document lives in `../../docs/idea/master-plan.md`.
+This file is the frontend-facing summary entrypoint for the dashboard work.
+The primary project architecture document lives in `../docs/idea/master-plan.md`.
 
 ## Status
 
@@ -29,7 +29,7 @@ The primary project architecture document lives in `../../docs/idea/master-plan.
 
 ## Where To Read Next
 
-- Full architecture and ownership plan: [docs/idea/master-plan.md](../../docs/idea/master-plan.md)
-- Frontend implementation steps: [docs/idea/frontend-implementation-plan.md](../../docs/idea/frontend-implementation-plan.md)
-- Live project tracker: [docs/progress.md](../../docs/progress.md)
-- Prioritized requirement list: [docs/requirements.txt](../../docs/requirements.txt)
+- Full architecture and ownership plan: [docs/idea/master-plan.md](../docs/idea/master-plan.md)
+- Frontend implementation steps: [docs/idea/frontend-implementation-plan.md](../docs/idea/frontend-implementation-plan.md)
+- Live project tracker: [docs/progress.md](../docs/progress.md)
+- Prioritized requirement list: [docs/requirements.txt](../docs/requirements.txt)

@@ -377,7 +377,7 @@ export function buildJukeboxStateFromRemoteSnapshots(
     entityMap?: HomeAssistantEntityMap;
   },
 ): JukeboxAppState {
-  const nextTelemetry = snapshots.ha
+  const nextTelemetryBase = snapshots.ha
     ? mapHomeAssistantSnapshotToTelemetry(
         snapshots.ha,
         previousState.telemetry,
@@ -394,7 +394,13 @@ export function buildJukeboxStateFromRemoteSnapshots(
         nextMedia.activeTrack,
       )
     : previousState.library;
-
+  const nextTelemetry =
+    snapshots.backend?.eventLog !== undefined
+      ? {
+          ...nextTelemetryBase,
+          eventLog: snapshots.backend.eventLog,
+        }
+      : nextTelemetryBase;
   const nextConnectionStatus =
     snapshots.ha && snapshots.backend
       ? deriveConnectionStatus(

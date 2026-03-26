@@ -11,7 +11,7 @@ Use these documents instead:
 - `/README.md`
 - `/backend/README.md`
 - `/homeassistant/README.md`
-- `/frontend/sketch/MASTER-PLAN.md`
+- `/frontend/MASTER-PLAN.md`
 - `/docs/idea/master-plan.md`
 - `/docs/assignment/assignment.md`
 
@@ -19,5 +19,5 @@ Current architecture summary:
 
 - `Home Assistant` is the central automation runtime
 - `backend/` owns media state and playback coordination
-- `frontend/sketch/` is the dashboard client
+- `frontend/` is the dashboard client
 - `ESP32` provides telemetry and hardware I/O over `MQTT`

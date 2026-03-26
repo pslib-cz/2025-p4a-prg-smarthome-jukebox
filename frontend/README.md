@@ -11,10 +11,10 @@ The current repository focus is:
 ## Key Documents
 
 - Master plan: [MASTER-PLAN.md](./MASTER-PLAN.md)
-- Detailed architecture plan: [docs/idea/master-plan.md](../../docs/idea/master-plan.md)
-- Frontend implementation plan: [docs/idea/frontend-implementation-plan.md](../../docs/idea/frontend-implementation-plan.md)
-- Progress tracker: [docs/progress.md](../../docs/progress.md)
-- Prioritized requirements: [docs/requirements.txt](../../docs/requirements.txt)
+- Detailed architecture plan: [docs/idea/master-plan.md](../docs/idea/master-plan.md)
+- Frontend implementation plan: [docs/idea/frontend-implementation-plan.md](../docs/idea/frontend-implementation-plan.md)
+- Progress tracker: [docs/progress.md](../docs/progress.md)
+- Prioritized requirements: [docs/requirements.txt](../docs/requirements.txt)
 
 ## Current Frontend Direction
 

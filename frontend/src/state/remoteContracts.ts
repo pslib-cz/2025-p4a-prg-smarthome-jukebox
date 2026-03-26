@@ -69,6 +69,13 @@ export interface BackendPlaylistPayload {
   icon?: string;
 }
 
+export interface BackendLogPayload {
+  id: number | string;
+  time: string;
+  action: string;
+  meta: string;
+}
+
 export interface BackendMediaStatePayload {
   source?: "local" | "spotify";
   sourceLabel?: string;
@@ -93,6 +100,7 @@ export interface BackendSnapshot {
   connectionStatus: ConnectionStatus;
   media?: BackendMediaStatePayload;
   library?: BackendLibrarySnapshot;
+  eventLog?: EventLogItem[];
   receivedAt?: string;
   lastError?: string | null;
 }

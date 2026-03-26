@@ -15,29 +15,29 @@ Status legend:
 
 ## Phase 1: Service Skeleton
 
-- [ ] Create backend project structure under `src/` and `tests/`
-- [ ] Add configuration loading for local paths, ports, tokens, and HA endpoints
-- [ ] Add `GET /api/health`
-- [ ] Add structured logger
-- [ ] Add at least 3 unit tests for health/config failure behavior
+- [x] Create backend project structure under `src/` and `tests/`
+- [x] Add configuration loading for local paths, ports, tokens, and HA endpoints
+- [x] Add `GET /api/health`
+- [x] Add structured logger
+- [x] Add at least 3 unit tests for health/config failure behavior
 
 ## Phase 2: Local MP3 Catalog
 
-- [ ] Implement direct filesystem scan for the chosen media folder
-- [ ] Return normalized track objects
-- [ ] Return normalized playlist objects or expose an empty list cleanly
-- [ ] Handle missing cover art
-- [ ] Handle empty library without crashing
-- [ ] Add unit tests for:
+- [x] Implement direct filesystem scan for the chosen media folder
+- [x] Return normalized track objects
+- [x] Return normalized playlist objects or expose an empty list cleanly
+- [x] Handle missing cover art
+- [x] Handle empty library without crashing
+- [x] Add unit tests for:
   expected library load
   empty library
   invalid or missing media path
 
 ## Phase 3: Local Playback State And Commands
 
-- [ ] Expose `GET /api/media/state`
-- [ ] Expose `POST /api/media/command`
-- [ ] Support:
+- [x] Expose `GET /api/media/state`
+- [x] Expose `POST /api/media/command`
+- [-] Support:
   `play`, `pause`, `next`, `previous`, `seek`, `set_volume`
 - [ ] Normalize progress, duration, active source, and current track
 - [ ] Add unit tests for:
@@ -71,7 +71,7 @@ Status legend:
 ## Phase 6: Observability
 
 - [ ] Log startup, shutdown, media command execution, and bridge failures
-- [ ] Expose recent log entries in a frontend-friendly shape
+- [x] Expose recent log entries in a frontend-friendly shape
 - [ ] Expose backend health beyond simple process-up status
 - [ ] Record enough detail to explain playback failures during the demo
 
