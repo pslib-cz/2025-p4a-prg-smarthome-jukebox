@@ -1,23 +1,23 @@
 # HAJukeBox Progress Tracker
 
-Last updated: 2026-03-24
+Last updated: 2026-03-27
 
 Purpose
 
-- This file is the live project tracker for the frontend sketch.
+- This file is the live project tracker for the frontend application.
 - `docs/requirements.txt` stays the prioritized backlog.
 - This file tracks what is done, what is in progress, and what is still missing.
 
 Status legend
 
-- `DONE` = implemented in the sketch
+- `DONE` = implemented in the frontend
 - `PARTIAL` = present, but still needs refinement or clearer behavior
 - `NEXT` = should be tackled soon
 - `LATER` = intentionally postponed
 
 Current focus
 
-- Prepare the frontend for real Home Assistant-backed data
+- Freeze the Home Assistant contract while keeping the new backend-backed local playback path stable
 - Keep local MP3 as the baseline required media path
 - Preserve the current music-console visual identity while rewiring the data layer
 
@@ -63,19 +63,22 @@ Done
 - Pure mapper functions now translate HA entity payloads and backend media payloads into the shared frontend app-state contract.
 - A `RemoteJukeboxDataSource` scaffold now exists for merging HA telemetry and backend media into one provider-compatible data source.
 - Unit tests now also cover HA telemetry mapping, backend media mapping, and combined remote-state derivation.
+- The frontend now lives in the top-level `frontend/` folder instead of `frontend/sketch/`.
+- The frontend now reads real backend media, library, and recent-log data over HTTP.
+- Local MP3 browser playback now works through the backend track stream endpoint and a frontend-managed audio element.
 
 In progress
 
 - Define the exact Home Assistant entity and MQTT topic contract the frontend will expect.
 - Start separating purely decorative telemetry constants from baseline HA-driven telemetry data.
 - Decide how the first real telemetry adapter should expose freshness and reconnect timing into the shell state.
-- Replace the current remote data source scaffold transports with actual HA and backend HTTP/WebSocket clients.
+- Replace the remaining mock `Home Assistant` transport with a real HA HTTP/WebSocket client.
+- Tighten browser playback sync so seek/progress reflect real audio position instead of state-only placeholders.
 
 Next
 
 - Freeze a concrete HA entity list and MQTT topic list for the baseline local MP3 flow.
 - Bind the remote data source scaffold to real HA fetch/subscribe transport functions.
-- Bind the remote data source scaffold to the real backend media/library transport.
 - Reduce remaining static telemetry fallback data to only visual scaffolding markers and labels.
 - Add matching empty/offline placeholders inside `Telemetry Deck` panels once the HA telemetry contract is frozen.
 - Decide how the future real Spotify auth and SDK events will map onto the new Spotify sketch state.

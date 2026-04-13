@@ -10,8 +10,8 @@ Status legend:
 
 - [x] Freeze the backend as the baseline media engine
 - [ ] Confirm how `Home Assistant` will target playback commands
-- [ ] Confirm how the frontend will read media state from the backend
-- [ ] Freeze one API contract before writing real service code
+- [x] Confirm how the frontend will read media state from the backend
+- [x] Freeze one polling-first HTTP API contract before realtime work
 
 ## Phase 1: Service Skeleton
 
@@ -37,9 +37,10 @@ Status legend:
 
 - [x] Expose `GET /api/media/state`
 - [x] Expose `POST /api/media/command`
+- [x] Expose `GET /api/library/tracks/:trackId/stream` for browser playback
 - [-] Support:
-  `play`, `pause`, `next`, `previous`, `seek`, `set_volume`
-- [ ] Normalize progress, duration, active source, and current track
+  `play`, `pause`, `next`, `previous`, `seek`, `set_volume`, `play_track`
+- [-] Normalize progress, duration, active source, and current track
 - [ ] Add unit tests for:
   valid command execution
   invalid command payload
