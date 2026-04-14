@@ -1,6 +1,6 @@
 rest_command:
   hajukebox_media_command:
-    url: "http://127.0.0.1:3000/api/media/command"
+    url: "http://backend:3000/api/media/command"
     method: POST
     content_type: "application/json"
     timeout: 10
@@ -16,7 +16,7 @@ mqtt:
     - name: HAJukeBox Backend Status
       unique_id: hajukebox_backend_status
       state_topic: jukebox/system/health
-      value_template: "{{ value_json.backendStatus }}"
+      value_template: "{{ value_json.get('backendStatus', 'unknown') }}"
 
     - name: HAJukeBox Media Title
       unique_id: hajukebox_media_title
@@ -85,7 +85,7 @@ mqtt:
     - name: HAJukeBox Last Event
       unique_id: hajukebox_last_event
       state_topic: jukebox/system/event
-      value_template: "{{ value_json.action ~ ': ' ~ value_json.meta }}"
+      value_template: "{{ value_json.get('action') ~ ': ' ~ value_json.get('meta') if value_json.get('action') and value_json.get('meta') else value_json.get('event', value_json.get('status', 'Unavailable')) }}"
 
   binary_sensor:
     - name: HAJukeBox Media Playing

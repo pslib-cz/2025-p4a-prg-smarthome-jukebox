@@ -18,3 +18,9 @@ lerna-debug.log*
 .env
 .env.*
 *.local
+
+.runtime/
+runtime/homeassistant/
+runtime/music/*
+!runtime/music/.gitkeep
+!runtime/music/README.md

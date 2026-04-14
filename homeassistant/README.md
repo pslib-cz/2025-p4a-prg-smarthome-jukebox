@@ -6,7 +6,8 @@
 
 Quick team setup guide:
 
-- VirtualBox setup on Windows: [SETUP-VIRTUALBOX.md](./SETUP-VIRTUALBOX.md)
+- Preferred Docker setup: [SETUP-DOCKER.md](./SETUP-DOCKER.md)
+- Alternative VirtualBox setup: [SETUP-VIRTUALBOX.md](./SETUP-VIRTUALBOX.md)
 
 `Home Assistant` is the system source of truth for:
 
@@ -35,6 +36,11 @@ Bonus work is:
 
 The chosen architecture uses a custom local backend for media state and playback.
 `Home Assistant` still remains the visible automation brain.
+
+Preferred current team runtime path:
+
+- `Home Assistant Container` in the repository `Docker Compose` stack on a Linux host, Linux VM, or `WSL2 + Docker Desktop`
+- `Home Assistant OS` on `VirtualBox` only as a fallback path when Docker is not practical or when someone needs the fuller HA OS environment
 
 `Music Assistant` is not part of the selected baseline. If it was installed for testing, it can be removed.
 
@@ -93,6 +99,12 @@ Current bridge split:
 - `backend -> Home Assistant`: MQTT mirror topics
 - `frontend -> Home Assistant`: direct `REST + WebSocket` telemetry reads
 
+Current checked-in repo assumption:
+
+- `packages/jukebox_media_bridge.yaml` currently points to `http://backend:3000/api/media/command`
+- that works as-is when `Home Assistant` runs inside the same Docker Compose network as the backend
+- for `VirtualBox`, host-native, or remote deployments, replace that URL with a reachable backend host address before testing HA scripts
+
 Current mirrored MQTT topics:
 
 - `jukebox/media/state`
@@ -117,6 +129,12 @@ Backend runtime env for the MQTT mirror:
 - `HAJUKEBOX_MQTT_TOPIC_PREFIX`
 
 State and health topics should stay retained. Event topics should stay non-retained.
+
+Runtime note for Docker:
+
+- `Home Assistant Container` does not provide add-ons
+- the project therefore needs a separate `MQTT` broker container or another reachable broker service
+- the checked-in HA config is still compatible with this model because it depends on YAML packages, `REST`, `WebSocket`, and the standard `MQTT` integration
 
 ### Optional later
 
@@ -189,12 +207,17 @@ Use MQTT or backend event streams for the raw feed and mirror only summary state
 
 ### Baseline scripts
 
+Currently implemented in `scripts/jukebox_media.yaml`:
+
 - `script.hajukebox_play`
 - `script.hajukebox_pause`
 - `script.hajukebox_next`
 - `script.hajukebox_previous`
 - `script.hajukebox_seek`
 - `script.hajukebox_set_volume`
+
+Still planned for the baseline:
+
 - `script.hajukebox_set_mode`
 
 ### Baseline automations
@@ -281,7 +304,7 @@ The frontend should read the custom backend for:
 - local library
 - active media state
 - media commands
-- Spotify session state later
+- Spotify session and playback state
 
 This keeps `Home Assistant` visible as the runtime brain while still allowing the backend to own the media domain explicitly.
 
@@ -298,15 +321,14 @@ For local browser development, allow the Vite origin in `http.cors_allowed_origi
 homeassistant/
   README.md
   TODO.md
+  SETUP-DOCKER.md
+  SETUP-VIRTUALBOX.md
   configuration.yaml
   google_assistant.example.yaml
   packages/
+    jukebox_frontend_telemetry.yaml
     jukebox_media_bridge.yaml
     jukebox_google_assistant.yaml
-  automations/
-    jukebox_presence.yaml
-    jukebox_media.yaml
-    jukebox_logging.yaml
   scripts/
     jukebox_media.yaml
 ```
@@ -337,6 +359,7 @@ homeassistant/
 
 - Home Assistant REST API: https://developers.home-assistant.io/docs/api/rest
 - Home Assistant WebSocket API: https://developers.home-assistant.io/docs/api/websocket/
+- Home Assistant Linux and Container install guide: https://www.home-assistant.io/installation/linux
 - Home Assistant Windows install: https://www.home-assistant.io/installation/windows/
 - Home Assistant Ping integration: https://www.home-assistant.io/integrations/ping/
 - Home Assistant Google Assistant integration: https://www.home-assistant.io/integrations/google_assistant/

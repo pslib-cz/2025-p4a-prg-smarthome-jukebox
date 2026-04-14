@@ -19,8 +19,10 @@ Směr projektu je nyní zafixovaný do jedné architektury:
 - Rozsah backendu: [backend/README.md](./backend/README.md)
 - Seznam úkolů backendu: [backend/TODO.md](./backend/TODO.md)
 - Rozsah `Home Assistant`: [homeassistant/README.md](./homeassistant/README.md)
-- Nastavení `Home Assistant`: [homeassistant/SETUP-VIRTUALBOX.md](./homeassistant/SETUP-VIRTUALBOX.md)
+- Doporučené nastavení `Home Assistant` přes Docker: [homeassistant/SETUP-DOCKER.md](./homeassistant/SETUP-DOCKER.md)
+- Alternativní nastavení `Home Assistant` přes VirtualBox: [homeassistant/SETUP-VIRTUALBOX.md](./homeassistant/SETUP-VIRTUALBOX.md)
 - Seznam úkolů `Home Assistant`: [homeassistant/TODO.md](./homeassistant/TODO.md)
+- ESP32 firmware baseline: [esp/README.md](./esp/README.md)
 - Zadání předmětu: [docs/assignment/assignment.md](./docs/assignment/assignment.md)
 
 ## Zvolená architektura
@@ -131,9 +133,27 @@ Důležitá interpretace:
 ## Aktuální stav repa
 
 - `backend/` už vrací reálný lokální katalog, media state, media commandy, recent logy a stream endpoint pro jednotlivé tracky
-- `frontend/` už čte reálná backend data přes HTTP a umí přehrávat lokální MP3 v prohlížeči přes backend stream
-- hlavní baseline blocker už není samotný frontend-backend wiring, ale zafixování `Home Assistant` kontraktu, `MQTT` topiců a backend <-> HA bridge
-- křížové backend a kontraktové změny je vhodné vést přes `OpenSpec` artefakty v `openspec/changes/`
+- `backend/` už obsahuje i první `Home Assistant` MQTT mirror scaffold a bonusové `Spotify` auth/session endpointy
+- `frontend/` už čte reálná backend data přes HTTP, umí přehrávat lokální MP3 v prohlížeči přes backend stream a umí použít reálnou `Home Assistant` telemetrii přes `REST + WebSocket`
+- `homeassistant/` už obsahuje verzovaný config scaffold pro media bridge, frontend telemetry helpery a `Google Assistant` request entity
+- `esp/` už obsahuje baseline `ESP32` firmware pro `MQTT` telemetrii, odběr mediálních příkazů a mode LED signalizaci
+- hlavní baseline blocker už není chybějící scaffolding, ale živé ověření a hardening celé cesty `ESP32 -> MQTT -> Home Assistant -> frontend` a `Home Assistant -> backend`
+
+## Aktuální Docker Smoke Test
+
+Ověřeno dne `2026-04-14` ve `WSL2 + Docker Desktop`:
+
+- `Home Assistant`: `http://127.0.0.1:8123`
+- `frontend`: `http://127.0.0.1:5173`
+- `backend`: `http://127.0.0.1:3000`
+- `MQTT broker`: `127.0.0.1:1883`
+
+Poznámky k tomuto runtime:
+
+- první pull image `Home Assistant` je velký a může trvat několik minut
+- reálná hudba v Dockeru funguje přes bind mount host složky do `/music`
+- `ESP32` se po Wi‑Fi nepřipojuje na Docker service name `mqtt`, ale na LAN IP adresu hostitelského stroje
+- detailní fyzické zapojení a Wi‑Fi onboarding jsou v [esp/README.md](./esp/README.md)
 
 ## Doporučené pořadí realizace
 
@@ -144,12 +164,16 @@ Důležitá interpretace:
 2. Stabilizovat `Local MP3` vertical slice:
    - backend katalog + commandy + stream endpoint
    - frontend browser playback + sync stavu
-3. Napojit frontend na reálnou telemetrii z `HA`
-4. Dokončit backend <-> `Home Assistant` bridge pro mediální příkazy a summary mirror
+3. Ověřit živou `Home Assistant` instanci na sdíleném runtime:
+   - preferovaně `Home Assistant Container` přes Docker
+   - `VirtualBox` držet jako fallback
+4. Potvrdit end-to-end cestu:
+   - `ESP32 -> MQTT -> Home Assistant -> frontend`
+   - `Home Assistant -> backend` media commandy
 5. Stabilizovat základní demo flow a failure handling
 6. Přidat realtime vrstvu jen pokud polling přestane stačit
-7. Zkusit `Spotify`
-8. Zkusit `Google Assistant`
+7. Udělat jeden reálný `Spotify` smoke test
+8. Udělat jeden reálný `Google Assistant` smoke test
 
 ## Rozdělení týmu
 

@@ -1,9 +1,9 @@
 # HAJukeBox Design Context
 
 ## What The Prototype Is
-HAJukeBox is currently a mood-driven frontend sketch for a music player experience. It behaves like a compact DJ desk: tactile controls on the left, a vinyl-centered playback hero in the middle, and browsing/library actions on the right.
+HAJukeBox is a music-first dashboard prototype for a jukebox experience. It behaves like a compact DJ desk: tactile controls on the left, a vinyl-centered playback hero in the middle, and browsing/library actions on the right.
 
-This is intentionally a design prototype first. Presentational quality matters more than real playback, API wiring, or production behavior.
+The project still treats visual quality and music-device feel as first-class concerns, but the repository now also contains real backend media wiring and an optional real `Home Assistant` telemetry path.
 
 ## Current Visual Identity
 - Core metaphor: DJ console + modern music app.
@@ -34,11 +34,13 @@ This is intentionally a design prototype first. Presentational quality matters m
 - Spotify connect button used as a visual CTA, not a real integration.
 
 ## Important State Assumptions
-- Current app data flows through the shared provider and mock data source in `frontend/src/state/`.
+- Current app data flows through the shared provider and remote-aware data source layer in `frontend/src/state/`.
 - Important media and telemetry state no longer lives only in `src/App.tsx`.
 - Some purely presentational interactions still use local component state.
-- Spotify connection, songs, progress, and playlist content are placeholders.
-- The prototype should feel believable without becoming functionally complex too early.
+- Local MP3 playback and backend media reads are real.
+- `Home Assistant` reads are real when frontend env vars are configured, otherwise the app falls back to mock telemetry.
+- Spotify and some telemetry paths still rely on partial mock or fallback behavior.
+- The prototype should feel believable without turning into a generic monitoring dashboard.
 
 ## Reading `text.txt`
 `text.txt` describes an older concept focused on telemetry, presence sensors, modes, and smart-device control. That document is useful only as historical background.

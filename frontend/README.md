@@ -12,7 +12,8 @@ Current implementation reality:
 
 - backend media, library, and recent-log reads are already wired over HTTP
 - local MP3 playback already works in the browser through the backend stream endpoint
-- the next missing baseline piece is the real `Home Assistant` telemetry adapter and contract freeze
+- a real `Home Assistant` REST + WebSocket transport already exists behind frontend env configuration
+- the next missing baseline piece is live validation against the final HA entity/topic contract and tighter playback sync hardening
 
 ## Key Documents
 
@@ -65,3 +66,5 @@ VITE_HA_MODE=mock
 If HA env is missing, the app falls back to the existing mock telemetry transport.
 
 For browser access from `Vite`, `Home Assistant` must allow the frontend origin through `http.cors_allowed_origins`.
+
+If `Home Assistant` runs in Docker on the same host, point `VITE_HA_BASE_URL` at the host IP or hostname that serves port `8123`.

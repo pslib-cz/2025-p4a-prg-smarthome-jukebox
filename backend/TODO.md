@@ -1,6 +1,6 @@
 # Backend TODO
 
-Last reviewed: 2026-04-13
+Last reviewed: 2026-04-14
 
 Status legend:
 
@@ -13,9 +13,9 @@ Status legend:
 - [x] Freeze the backend as the baseline media engine
 - [x] Confirm how the frontend reads media state from the backend
 - [x] Freeze one polling-first HTTP API contract before realtime work
-- [-] Track backend contract hardening in `openspec/changes/freeze-backend-media-contract/`
-- [ ] Confirm how `Home Assistant` will target playback commands through the backend bridge
-- [ ] Freeze structured error payloads plus media availability and capability fields
+- [-] Document the hardened backend contract directly in `backend/README.md` and route tests
+- [-] Confirm how `Home Assistant` will target playback commands through the backend bridge
+- [-] Freeze structured error payloads plus media availability and capability fields
 
 ## Phase 1: Service Skeleton
 
@@ -57,11 +57,11 @@ Status legend:
 
 ## Phase 4: Home Assistant Bridge
 
-- [ ] Freeze how HA talks to the backend for media commands:
+- [-] Freeze how HA talks to the backend for media commands:
   `REST`, `webhook`, `MQTT mirror`, or a mixed path
-- [ ] Mirror current media summary to `Home Assistant`
-- [ ] Accept HA-originated playback commands
-- [ ] Publish recent media events in a way that HA can log or display
+- [-] Mirror current media summary to `Home Assistant`
+- [-] Accept HA-originated playback commands
+- [-] Publish recent media events in a way that HA can log or display
 - [ ] Add tests for:
   successful state mirror
   HA unavailable case

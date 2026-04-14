@@ -1,0 +1,74 @@
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: hajukebox-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: hajukebox-backend
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+    environment:
+      HAJUKEBOX_HOST: 0.0.0.0
+      HAJUKEBOX_PORT: 3000
+      MEDIA_LIBRARY_PATH: ${MEDIA_LIBRARY_PATH:-}
+      HAJUKEBOX_MQTT_BROKER_URL: mqtt://mqtt:1883
+      HAJUKEBOX_MQTT_USERNAME: ${HAJUKEBOX_MQTT_USERNAME:-}
+      HAJUKEBOX_MQTT_PASSWORD: ${HAJUKEBOX_MQTT_PASSWORD:-}
+      HAJUKEBOX_MQTT_CLIENT_ID: ${HAJUKEBOX_MQTT_CLIENT_ID:-hajukebox-backend}
+      HAJUKEBOX_MQTT_TOPIC_PREFIX: ${HAJUKEBOX_MQTT_TOPIC_PREFIX:-jukebox}
+      HAJUKEBOX_SPOTIFY_CLIENT_ID: ${HAJUKEBOX_SPOTIFY_CLIENT_ID:-}
+      HAJUKEBOX_SPOTIFY_REDIRECT_URI: ${HAJUKEBOX_SPOTIFY_REDIRECT_URI:-}
+      HAJUKEBOX_SPOTIFY_FRONTEND_REDIRECT_URI: ${HAJUKEBOX_SPOTIFY_FRONTEND_REDIRECT_URI:-}
+      HAJUKEBOX_SPOTIFY_SCOPES: ${HAJUKEBOX_SPOTIFY_SCOPES:-}
+      HAJUKEBOX_SPOTIFY_MOCK_MODE: ${HAJUKEBOX_SPOTIFY_MOCK_MODE:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${MUSIC_LIBRARY_PATH:-./runtime/music}:/music:ro
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: hajukebox-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      BACKEND_PROXY_TARGET: http://backend:3000
+      VITE_HA_BASE_URL: ${VITE_HA_BASE_URL:-http://127.0.0.1:8123}
+      VITE_HA_TOKEN: ${VITE_HA_TOKEN:-}
+      VITE_HA_WEBSOCKET_URL: ${VITE_HA_WEBSOCKET_URL:-}
+      VITE_HA_LOGBOOK_HOURS: ${VITE_HA_LOGBOOK_HOURS:-6}
+      VITE_HA_EVENT_LOG_LIMIT: ${VITE_HA_EVENT_LOG_LIMIT:-12}
+      VITE_HA_MODE: ${VITE_HA_MODE:-mock}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: hajukebox-homeassistant
+    restart: unless-stopped
+    privileged: true
+    depends_on:
+      - backend
+      - mqtt
+    environment:
+      TZ: ${TZ:-Europe/Prague}
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./runtime/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+
+volumes:
+  frontend_node_modules:

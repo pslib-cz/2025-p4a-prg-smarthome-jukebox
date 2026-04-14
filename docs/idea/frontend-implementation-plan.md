@@ -1,6 +1,6 @@
 # HAJukeBox Frontend Implementation Plan
 
-Last updated: 2026-03-26
+Last updated: 2026-04-14
 Status: Active
 
 ## Goal
@@ -197,23 +197,25 @@ Status:
 ### Step 8
 - Build HA telemetry adapter and backend media adapter.
 Status:
-- in progress
+- done
 
 ### Step 9
 - Replace mock telemetry with real telemetry.
 Status:
-- pending
+- in progress
 
 ### Step 10
 - Replace mock local playback with real backend-backed local playback.
 Status:
-- pending
+- in progress
 
 Progress note:
 - typed remote snapshot contracts now exist
 - HA telemetry and backend media mapper functions now exist
-- a provider-compatible remote data source scaffold now exists
-- the next implementation step is to replace scaffold transports with real HTTP/WebSocket clients
+- a provider-compatible remote data source now uses real backend HTTP reads
+- a real HA `REST + WebSocket` transport now exists behind frontend env configuration
+- local MP3 browser playback now runs through the backend stream endpoint
+- the remaining frontend work is live validation against the final HA contract and tighter playback lifecycle sync
 
 ### Step 11
 - Freeze the baseline frontend.
@@ -253,9 +255,9 @@ Status:
 4. If telemetry uses a different state model than the player, the dashboard will feel fake again.
 
 ## Immediate Next Step
-Implement the first UI resiliency pass:
-- add minimal provider-backed loading and disconnected states
+Validate the live frontend path:
+- test the real HA transport against the final entity list and auth settings
 - reduce remaining telemetry constants to decorative-only scaffolding
-- freeze the first HA entity and MQTT topic contract draft
+- tighten browser playback sync against the current backend media contract
 
 That is the smallest useful next step after the Telemetry Deck binding, and it moves the app from mock-ready to adapter-ready.

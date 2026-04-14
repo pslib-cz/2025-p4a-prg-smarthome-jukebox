@@ -4,13 +4,13 @@
 #include <math.h>
 
 // ===== User setup =====
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID = "asus";
+const char* WIFI_PASSWORD = "123456789";
 
-const char* MQTT_HOST = "192.168.1.100";
+const char* MQTT_HOST = "192.168.137.7";
 const uint16_t MQTT_PORT = 1883;
-const char* MQTT_USER = "mqtt_user";
-const char* MQTT_PASSWORD = "mqtt_password";
+const char* MQTT_USER = "admin";
+const char* MQTT_PASSWORD = "1234";
 
 // Device and MQTT topics (aligned with project README/homeassistant contract)
 const char* DEVICE_ID = "esp32-jukebox-01";
@@ -20,7 +20,7 @@ const char* TOPIC_MIC_LEVEL = "jukebox/sensors/mic_level";
 const char* TOPIC_RSSI = "jukebox/device/rssi";
 const char* TOPIC_UPTIME = "jukebox/device/uptime";
 const char* TOPIC_HEALTH = "jukebox/device/health";
-const char* TOPIC_SYSTEM_HEALTH = "jukebox/system/health";
+const char* TOPIC_SYSTEM_HEALTH = "jukebox/device/system_health";
 const char* TOPIC_SYSTEM_EVENT = "jukebox/system/event";
 const char* TOPIC_MEDIA_COMMAND = "jukebox/media/command";
 

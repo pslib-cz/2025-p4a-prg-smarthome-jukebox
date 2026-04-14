@@ -1,8 +1,13 @@
-# Home Assistant Setup On Windows With VirtualBox
+# Alternative: Home Assistant OS On Windows With VirtualBox
 
-Last updated: 2026-03-26
+Last updated: 2026-04-14
 
-This guide is the shared team setup path for running `Home Assistant OS` locally on a Windows machine with `VirtualBox`.
+This guide is the fallback team setup path for running `Home Assistant OS` locally on a Windows machine with `VirtualBox`.
+
+Current team preference:
+
+- prefer `Home Assistant Container` via Docker when a teammate has a Linux host or Linux VM with `Docker Engine`
+- use this `VirtualBox` path when Docker is not practical or when someone specifically needs the fuller HA OS environment
 
 Use this guide if you want a stable development environment with:
 
@@ -13,7 +18,7 @@ Use this guide if you want a stable development environment with:
 
 ## Why This Path
 
-Recommended team baseline:
+Recommended fallback baseline:
 
 - host machine: `Windows`
 - virtualization: `VirtualBox`
@@ -183,6 +188,12 @@ After Home Assistant works, the next team setup steps are:
 2. one additional local HA integration for assignment compliance, recommended `Ping`
 3. backend bridge work
 
+Important for this repository:
+
+- the checked-in `packages/jukebox_media_bridge.yaml` uses `http://backend:3000/api/media/command`
+- inside a `VirtualBox` HA VM, that hostname will not resolve unless you provide your own DNS or matching host alias
+- before testing HA media scripts, replace it with the reachable host IP or another backend address visible from the VM
+
 Do not treat `Music Assistant` as part of the baseline.
 
 If someone already installed it during testing, it can be removed from HA to keep the environment aligned with the chosen architecture.
@@ -244,6 +255,7 @@ Double-check that the VM uses both `NAT` and `Bridged Adapter`, not only one of 
 
 Once all three teammates can boot HA locally, continue with:
 
+- [SETUP-DOCKER.md](./SETUP-DOCKER.md)
 - [README.md](./README.md)
 - [TODO.md](./TODO.md)
 

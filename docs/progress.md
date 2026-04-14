@@ -1,6 +1,6 @@
 # HAJukeBox Progress Tracker
 
-Last updated: 2026-04-13
+Last updated: 2026-04-14
 
 Purpose
 
@@ -85,7 +85,7 @@ Next
 - Validate the new real HA transport against a live HA instance with final entities and auth settings.
 - Reduce remaining static telemetry fallback data to only visual scaffolding markers and labels.
 - Add matching empty/offline placeholders inside `Telemetry Deck` panels once the HA telemetry contract is frozen.
-- Mirror backend media summary state into `Home Assistant` once the HA bridge shape is frozen.
+- Validate the backend media summary mirror against a live `Home Assistant` runtime and final network topology.
 - Decide how the future real Spotify auth and SDK events will map onto the new Spotify sketch state.
 
 Later

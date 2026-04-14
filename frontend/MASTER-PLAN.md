@@ -8,6 +8,9 @@ The primary project architecture document lives in `../docs/idea/master-plan.md`
 - Baseline priority: `Local MP3 + Home Assistant + backend media service + telemetry + ESP32`
 - Bonus priority: `Spotify Web Playback SDK`
 - Optional bonus: `Google Assistant`
+- Current frontend state: real backend HTTP reads and browser-backed local MP3 playback are already wired
+- Current frontend state: real `Home Assistant` telemetry transport already exists behind env configuration
+- Main remaining frontend work: live HA validation and tighter playback sync hardening
 
 ## Core Decisions
 
@@ -20,12 +23,11 @@ The primary project architecture document lives in `../docs/idea/master-plan.md`
 
 ## Delivery Order
 
-1. Finalize the frontend state contract and mock-driven UI.
-2. Bind the frontend to real `Home Assistant` telemetry and automation state.
-3. Bind the frontend to real backend media state and `Local MP3` commands.
-4. Freeze the baseline demo path.
-5. Attempt `Spotify Web Playback SDK` as a bonus integration.
-6. Add `Google Assistant` only if the baseline is already stable.
+1. Validate the real `Home Assistant` telemetry transport against the final entity contract.
+2. Tighten backend media sync and browser-backed `Local MP3` playback behavior.
+3. Freeze the baseline demo path.
+4. Attempt `Spotify Web Playback SDK` as a bonus integration.
+5. Add `Google Assistant` only if the baseline is already stable.
 
 ## Where To Read Next
 

@@ -11,7 +11,7 @@ It is the chosen baseline owner for:
 - media control commands
 - track streaming for browser playback
 - frontend-facing media API
-- later Spotify auth and session handling
+- Spotify auth and session handling
 
 It is **not** the owner of automation truth, room state, or sensor fusion.
 `Home Assistant` keeps that role.
@@ -23,6 +23,12 @@ The architecture is frozen to:
 - `Home Assistant` as the central automation runtime
 - `backend/` as the explicit media-state subsystem
 - `frontend/` consuming both domains through separate adapters
+
+Current repository slice:
+
+- the checked-in backend already serves the local MP3 contract
+- the checked-in `Home Assistant` bridge scaffold mirrors media state through `MQTT`
+- the checked-in Spotify slice already exposes auth, session, token, state, transfer, and disconnect endpoints
 
 `Music Assistant` is not part of the baseline plan.
 
@@ -93,6 +99,12 @@ Current baseline note:
 
 The backend should provide enough mirrored state for `Home Assistant` to remain the visible automation brain.
 
+Current checked-in bridge split:
+
+- `Home Assistant -> backend`: HA scripts call `POST /api/media/command`
+- `backend -> Home Assistant`: retained `MQTT` state and health topics plus non-retained event topics
+- final runtime URL, broker placement, and topic namespace still need live validation on the shared setup
+
 Minimum bridge outputs:
 
 - current track metadata
@@ -155,7 +167,7 @@ Recommended state domains returned to the frontend:
 - `library`
 - `systemHealth`
 - `eventLog`
-- `spotify` later
+- `spotify`
 
 ## Realtime Contract
 
@@ -174,28 +186,23 @@ These events can be implemented using:
 
 The contract matters more than the first transport choice.
 
-## Planning Rule
-
-Cross-cutting backend contract changes should start as an `OpenSpec` change under `openspec/changes/`.
-
-Current tracked backend contract change:
-
-- `openspec/changes/freeze-backend-media-contract/`
-
 ## Suggested Folder Layout
 
 ```text
 backend/
   README.md
   TODO.md
+  package.json
+  tsconfig.json
   src/
-    app/
+    app.ts
+    server.ts
     config/
-    media/
-    spotify/
     homeassistant/
-    transport/
-    logs/
+    media/
+    routes/
+    runtime/
+    spotify/
   tests/
 ```
 

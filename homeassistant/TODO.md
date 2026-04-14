@@ -1,6 +1,6 @@
 # Home Assistant TODO
 
-Last reviewed: 2026-04-13
+Last reviewed: 2026-04-14
 
 Status legend:
 
@@ -10,8 +10,8 @@ Status legend:
 
 ## Phase 0: Runtime Freeze
 
-- [ ] Decide where `Home Assistant` runs for the demo:
-  dedicated host, mini PC, VM, or other always-on local machine
+- [-] Prefer `Home Assistant Container` via Docker for team development and decide the final demo host:
+  dedicated host, mini PC, Linux VM, or other always-on local machine
 - [-] Freeze entity names before frontend and backend adapters are written
 - [-] Freeze MQTT topic names before ESP32 and HA packages are written
 - [x] Freeze how HA media scripts call the backend bridge
@@ -23,7 +23,7 @@ Status legend:
 - [x] Create or reserve the final config structure inside this folder
 - [x] Install and configure the `MQTT` integration
 - [ ] Add the second local HA integration, recommended `Ping`
-- [ ] Verify API access for frontend development
+- [-] Verify API access for frontend development
 - [ ] Remove `Music Assistant` if it was installed only for testing
 
 ## Phase 2: MQTT Ingest
@@ -53,7 +53,7 @@ Status legend:
 - [x] Add `previous` script that proxies the backend media path
 - [x] Add `set_volume` script that proxies the backend media path
 - [ ] Add `set_mode`
-- [ ] Validate script calls from HA UI and automations into the backend bridge
+- [-] Validate script calls from HA UI and automations into the backend bridge
 
 ## Phase 5: Automations
 
@@ -65,8 +65,8 @@ Status legend:
 
 ## Phase 6: Frontend Contract Validation
 
-- [ ] Confirm the frontend can fetch initial state from HA
-- [ ] Confirm the frontend can subscribe to live updates via WebSocket
+- [-] Confirm the frontend can fetch initial state from HA
+- [-] Confirm the frontend can subscribe to live updates via WebSocket
 - [ ] Confirm the frontend can derive:
   distance
   clap count
@@ -76,7 +76,7 @@ Status legend:
   MQTT connected state
   mode
   backend status
-- [ ] Confirm HA-exposed media summary is sufficient for demo defense
+- [-] Confirm HA-exposed media summary is sufficient for demo defense
 - [ ] Decide which event-log items come from HA and which stay in MQTT or backend streams
 
 ## Phase 7: Bonus Paths

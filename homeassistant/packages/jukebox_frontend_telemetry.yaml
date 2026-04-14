@@ -111,3 +111,203 @@ template:
             {% else %}
               Not configured
             {% endif %}
+
+automation:
+  - id: hajukebox_esp32_distance_telemetry
+    alias: HAJukeBox ESP32 Distance Telemetry
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/sensors/distance
+    variables:
+      distance_cm: "{{ trigger.payload_json.value | int(-1) }}"
+      clamped_distance_cm: "{{ [distance_cm, 0] | max }}"
+      presence_confidence: >-
+        {% if distance_cm >= 0 and distance_cm <= 120 %}
+          90
+        {% elif distance_cm > 120 and distance_cm <= 250 %}
+          45
+        {% else %}
+          0
+        {% endif %}
+      presence_reason: >-
+        {% if distance_cm == -1 %}
+          No echo from ultrasonic sensor
+        {% elif distance_cm <= 120 %}
+          Distance sensor detected nearby presence
+        {% elif distance_cm <= 250 %}
+          Distance sensor detected movement in range
+        {% else %}
+          No nearby distance presence
+        {% endif %}
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.hajukebox_distance_cm_value
+        data:
+          value: "{{ clamped_distance_cm }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.hajukebox_presence_confidence_value
+        data:
+          value: "{{ presence_confidence | int(0) }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_presence_reason_value
+        data:
+          value: "{{ presence_reason }}"
+
+  - id: hajukebox_esp32_clap_telemetry
+    alias: HAJukeBox ESP32 Clap Telemetry
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/sensors/clap
+    variables:
+      clap_count: "{{ trigger.payload_json.value | int(0) }}"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.hajukebox_clap_count_today_value
+        data:
+          value: "{{ clap_count }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_presence_reason_value
+        data:
+          value: "Clap detected by ESP32"
+
+  - id: hajukebox_esp32_rssi_telemetry
+    alias: HAJukeBox ESP32 RSSI Telemetry
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/device/rssi
+    variables:
+      rssi_value: "{{ trigger.payload_json.value | int(-120) }}"
+      clamped_rssi_value: "{{ [[rssi_value, -120] | max, 0] | min }}"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.hajukebox_esp32_rssi_value
+        data:
+          value: "{{ clamped_rssi_value }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.hajukebox_mqtt_connected_value
+
+  - id: hajukebox_esp32_uptime_telemetry
+    alias: HAJukeBox ESP32 Uptime Telemetry
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/device/uptime
+    variables:
+      uptime_seconds: "{{ trigger.payload_json.value | int(0) }}"
+      uptime_text: >-
+        {% set total = uptime_seconds | int(0) %}
+        {% set hours = total // 3600 %}
+        {% set minutes = (total % 3600) // 60 %}
+        {% set seconds = total % 60 %}
+        {% if hours > 0 %}
+          {{ hours }} h {{ '%02d' | format(minutes) }} m
+        {% elif minutes > 0 %}
+          {{ minutes }} m {{ '%02d' | format(seconds) }} s
+        {% else %}
+          {{ seconds }} s
+        {% endif %}
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_uptime_value
+        data:
+          value: "{{ uptime_text | trim }}"
+
+  - id: hajukebox_esp32_health_status
+    alias: HAJukeBox ESP32 Health Status
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/device/health
+    variables:
+      status_value: "{{ (trigger.payload_json.status | default('offline')) | lower }}"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ status_value == 'online' }}"
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.hajukebox_mqtt_connected_value
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.hajukebox_presence_reason_value
+                data:
+                  value: "ESP32 online via MQTT"
+        default:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.hajukebox_mqtt_connected_value
+          - service: input_number.set_value
+            target:
+              entity_id: input_number.hajukebox_presence_confidence_value
+            data:
+              value: 0
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.hajukebox_presence_reason_value
+            data:
+              value: "ESP32 offline"
+          - service: input_select.select_option
+            target:
+              entity_id: input_select.hajukebox_mode
+            data:
+              option: Unavailable
+
+  - id: hajukebox_esp32_mode_events
+    alias: HAJukeBox ESP32 Mode Events
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/system/event
+    variables:
+      event_name: "{{ trigger.payload_json.event | default('') }}"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ event_name == 'mode_focus' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.hajukebox_mode
+                data:
+                  option: Focus armed
+          - conditions:
+              - condition: template
+                value_template: "{{ event_name == 'mode_party' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.hajukebox_mode
+                data:
+                  option: Party
+          - conditions:
+              - condition: template
+                value_template: "{{ event_name == 'mode_eco' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.hajukebox_mode
+                data:
+                  option: Eco
+          - conditions:
+              - condition: template
+                value_template: "{{ event_name == 'mode_idle' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.hajukebox_mode
+                data:
+                  option: Idle
