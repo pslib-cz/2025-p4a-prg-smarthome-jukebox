@@ -3,6 +3,10 @@
 #include <Adafruit_NeoPixel.h>
 #include <math.h>
 
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 // ===== User setup =====
 const char* WIFI_SSID = "asus";
 const char* WIFI_PASSWORD = "123456789";

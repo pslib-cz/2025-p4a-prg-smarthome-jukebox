@@ -35,6 +35,15 @@
 6. Nahraj přes **Upload**
 7. Otevři **Serial Monitor** na `115200`
 
+### Troubleshooting kompilace
+
+Pokud Arduino IDE hlásí chybu `LED_BUILTIN was not declared`, aktuální sketch už má fallback:
+
+- `#ifndef LED_BUILTIN`
+- `#define LED_BUILTIN 2`
+
+Takže stačí používat poslední verzi souboru `smarthome_jukebox_esp.ino`.
+
 ## Aktuální piny (podle tvého zapojení)
 
 - `PIN_ULTRASONIC_TRIG = 5`
