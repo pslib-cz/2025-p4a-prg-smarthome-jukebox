@@ -1,0 +1,37 @@
+# Example manual Google Assistant setup.
+# Copy the block into configuration.yaml or include it from a private google_assistant.yaml.
+# The exposed input_button entities behave like scene-style voice triggers.
+
+google_assistant:
+  project_id: your-google-home-project-id
+  service_account: !include SERVICE_ACCOUNT.json
+  report_state: true
+  expose_by_default: false
+  entity_config:
+    input_button.hajukebox_google_play_request:
+      name: HAJukeBox Play Music
+      aliases:
+        - Start jukebox music
+        - Play local jukebox
+      room: Living Room
+
+    input_button.hajukebox_google_pause_request:
+      name: HAJukeBox Pause Music
+      aliases:
+        - Pause jukebox music
+        - Stop jukebox music
+      room: Living Room
+
+    input_button.hajukebox_google_next_request:
+      name: HAJukeBox Next Track
+      aliases:
+        - Skip jukebox track
+        - Play next jukebox song
+      room: Living Room
+
+    input_button.hajukebox_google_previous_request:
+      name: HAJukeBox Previous Track
+      aliases:
+        - Previous jukebox track
+        - Replay prior jukebox song
+      room: Living Room

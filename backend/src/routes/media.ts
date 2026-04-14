@@ -1,14 +1,65 @@
 import fs from "node:fs";
 import type { FastifyInstance } from "fastify";
 import {
+  createMediaErrorResponse,
+  internalError,
+  invalidCommand,
+  invalidTrackId,
+  isMediaApiError,
+} from "../media/errors.js";
+import type { HomeAssistantBridgePublisher } from "../homeassistant/mediaBridge.js";
+import {
   isMediaCommand,
   type InMemoryMediaService,
 } from "../media/service.js";
+import type {
+  MediaCommandResponse,
+  MediaErrorResponse,
+  MediaLibraryRescanResponse,
+} from "../media/types.js";
+
+function sendMediaError(
+  reply: {
+    code(statusCode: number): {
+      send(payload: MediaErrorResponse): unknown;
+    };
+  },
+  error: unknown,
+  fallbackMessage: string,
+) {
+  if (isMediaApiError(error)) {
+    return reply
+      .code(error.statusCode)
+      .send(createMediaErrorResponse(error.code, error.message));
+  }
+
+  const safeError = internalError(fallbackMessage);
+  return reply
+    .code(safeError.statusCode)
+    .send(createMediaErrorResponse(safeError.code, safeError.message));
+}
 
 export function registerMediaRoutes(
   app: FastifyInstance,
   mediaService: InMemoryMediaService,
+  homeAssistantBridge: HomeAssistantBridgePublisher,
 ) {
+  function publishMirrorUpdate() {
+    void homeAssistantBridge
+      .publishMediaUpdate(mediaService.getState(), mediaService.getLatestLogEntry())
+      .catch((error) => {
+        mediaService.recordRuntimeEvent(
+          "haBridge.publish_failed",
+          error instanceof Error ? error.message : String(error),
+          {
+            level: "warn",
+            domain: "haBridge",
+          },
+        );
+        app.log.warn({ err: error }, "Failed to publish HA media mirror update");
+      });
+  }
+
   app.get("/api/media/state", async () => {
     return mediaService.getState();
   });
@@ -24,9 +75,10 @@ export function registerMediaRoutes(
     );
 
     if (!Number.isInteger(trackId)) {
-      return reply.code(400).send({
-        error: "Invalid track id.",
-      });
+      const error = invalidTrackId();
+      return reply
+        .code(error.statusCode)
+        .send(createMediaErrorResponse(error.code, error.message));
     }
 
     try {
@@ -35,12 +87,11 @@ export function registerMediaRoutes(
       reply.header("Content-Type", "audio/mpeg");
       return reply.send(fs.createReadStream(filePath));
     } catch (error) {
-      return reply.code(404).send({
-        error:
-          error instanceof Error
-            ? error.message
-            : "Track stream is not available.",
-      });
+      return sendMediaError(
+        reply,
+        error,
+        "Track stream is not available.",
+      );
     }
   });
 
@@ -55,44 +106,40 @@ export function registerMediaRoutes(
   app.post("/api/library/rescan", async (_, reply) => {
     try {
       const summary = mediaService.rescanLibrary();
+      publishMirrorUpdate();
 
-      return {
+      const response: MediaLibraryRescanResponse = {
         ok: true,
         ...summary,
       };
+
+      return response;
     } catch (error) {
-      return reply.code(400).send({
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to rescan media library.",
-      });
+      return sendMediaError(reply, error, "Failed to rescan media library.");
     }
   });
 
   app.post("/api/media/command", async (request, reply) => {
     if (!isMediaCommand(request.body)) {
-      return reply.code(400).send({
-        error: "Invalid media command payload.",
-      });
+      const error = invalidCommand();
+      return reply
+        .code(error.statusCode)
+        .send(createMediaErrorResponse(error.code, error.message));
     }
 
     try {
       const mediaState = mediaService.applyCommand(request.body);
-
-      return {
+      publishMirrorUpdate();
+      const response: MediaCommandResponse = {
         ok: true,
         media: mediaState,
       };
+
+      return response;
     } catch (error) {
       app.log.warn({ err: error }, "Failed to apply media command");
 
-      return reply.code(400).send({
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to apply media command.",
-      });
+      return sendMediaError(reply, error, "Failed to apply media command.");
     }
   });
 }

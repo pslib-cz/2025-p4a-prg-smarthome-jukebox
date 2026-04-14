@@ -1,17 +1,21 @@
 # Backend TODO
 
+Last reviewed: 2026-04-13
+
 Status legend:
 
 - `[ ]` not started
 - `[-]` in progress
 - `[x]` done
 
-## Phase 0: Freeze The Backend Role
+## Phase 0: Contract Freeze
 
 - [x] Freeze the backend as the baseline media engine
-- [ ] Confirm how `Home Assistant` will target playback commands
-- [x] Confirm how the frontend will read media state from the backend
+- [x] Confirm how the frontend reads media state from the backend
 - [x] Freeze one polling-first HTTP API contract before realtime work
+- [-] Track backend contract hardening in `openspec/changes/freeze-backend-media-contract/`
+- [ ] Confirm how `Home Assistant` will target playback commands through the backend bridge
+- [ ] Freeze structured error payloads plus media availability and capability fields
 
 ## Phase 1: Service Skeleton
 
@@ -33,23 +37,29 @@ Status legend:
   empty library
   invalid or missing media path
 
-## Phase 3: Local Playback State And Commands
+## Phase 3: Local MP3 Browser Playback Slice
 
 - [x] Expose `GET /api/media/state`
 - [x] Expose `POST /api/media/command`
 - [x] Expose `GET /api/library/tracks/:trackId/stream` for browser playback
-- [-] Support:
+- [x] Expose `POST /api/library/rescan`
+- [x] Support API-level commands:
   `play`, `pause`, `next`, `previous`, `seek`, `set_volume`, `play_track`
-- [-] Normalize progress, duration, active source, and current track
+- [-] Normalize progress, duration, active source, and current track for browser-backed playback
+- [-] Keep backend media state synchronized with frontend-managed audio lifecycle
+- [ ] Add machine-readable error payloads for invalid command, unknown track, conflict, and unavailable dependency cases
 - [ ] Add unit tests for:
   valid command execution
   invalid command payload
+  unknown track id
   unavailable player case
+  structured error payloads
 
 ## Phase 4: Home Assistant Bridge
 
-- [ ] Decide whether HA talks to the backend via `REST`, `webhook`, `MQTT mirror`, or a mixed path
-- [ ] Mirror current media state to `Home Assistant`
+- [ ] Freeze how HA talks to the backend for media commands:
+  `REST`, `webhook`, `MQTT mirror`, or a mixed path
+- [ ] Mirror current media summary to `Home Assistant`
 - [ ] Accept HA-originated playback commands
 - [ ] Publish recent media events in a way that HA can log or display
 - [ ] Add tests for:
@@ -57,9 +67,10 @@ Status legend:
   HA unavailable case
   malformed HA response or bridge payload
 
-## Phase 5: Frontend-Facing Realtime Updates
+## Phase 5: Frontend-Facing Sync And Realtime
 
-- [ ] Choose `WebSocket`, `SSE`, or polling-first
+- [x] Keep polling-first HTTP usable as the baseline transport
+- [ ] Decide whether the demo actually needs `WebSocket` or `SSE`
 - [ ] Emit `media.state.updated`
 - [ ] Emit `library.updated`
 - [ ] Emit `system.health.updated`
@@ -78,11 +89,12 @@ Status legend:
 
 ## Phase 7: Spotify Bonus
 
-- [ ] Add `Authorization Code with PKCE` flow
-- [ ] Store refresh tokens server-side only
-- [ ] Expose browser-player session state for the frontend
-- [ ] Mirror Spotify source state to `Home Assistant`
-- [ ] Keep Spotify optional so local MP3 still demos cleanly if this fails
+- [x] Add `Authorization Code with PKCE` flow
+- [x] Store refresh tokens server-side only
+- [x] Expose browser-player session state for the frontend
+- [x] Mirror Spotify source state to `Home Assistant`
+- [x] Keep Spotify optional so local MP3 still demos cleanly if this fails
+- [ ] Run one manual smoke with a real Spotify Premium account
 
 ## Stop Rules
 

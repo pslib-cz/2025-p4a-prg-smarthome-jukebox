@@ -30,6 +30,40 @@ describe("buildSpotifyPanelViewModel", () => {
     expect(viewModel.timeline[2].complete).toBe(false);
   });
 
+  it("disables actions when Spotify is not configured", () => {
+    const viewModel = buildSpotifyPanelViewModel({
+      ...INITIAL_SPOTIFY_STATE,
+      configured: false,
+    });
+
+    expect(viewModel.statusLabel).toBe("Not Configured");
+    expect(viewModel.primaryActionKind).toBe("disabled");
+  });
+
+  it("shows loading state while the Web Playback SDK is initializing", () => {
+    const viewModel = buildSpotifyPanelViewModel({
+      ...INITIAL_SPOTIFY_STATE,
+      authStatus: "connected",
+      sdkStatus: "loading",
+    });
+
+    expect(viewModel.statusLabel).toBe("Initializing");
+    expect(viewModel.primaryActionKind).toBe("disabled");
+    expect(viewModel.secondaryActionLabel).toBe("Disconnect");
+  });
+
+  it("blocks browser playback on free Spotify accounts", () => {
+    const viewModel = buildSpotifyPanelViewModel({
+      ...INITIAL_SPOTIFY_STATE,
+      authStatus: "connected",
+      accountTier: "free",
+    });
+
+    expect(viewModel.statusLabel).toBe("Premium Required");
+    expect(viewModel.primaryActionKind).toBe("disabled");
+    expect(viewModel.secondaryActionLabel).toBe("Disconnect");
+  });
+
   it("formats active playback progress for the Spotify preview track", () => {
     expect(getSpotifyTrackProgress(INITIAL_SPOTIFY_STATE)).toBe("1:04 / 3:35");
   });

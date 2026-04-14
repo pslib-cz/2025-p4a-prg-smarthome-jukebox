@@ -77,10 +77,50 @@ Do not count the custom backend as one of the required HA integrations.
 - log meaningful automation events
 - mirror backend media summaries into HA entities or scripts
 
+## Implemented Bridge Scaffold
+
+The baseline bridge scaffold now lives in:
+
+- `configuration.yaml`
+- `packages/jukebox_media_bridge.yaml`
+- `packages/jukebox_google_assistant.yaml`
+- `scripts/jukebox_media.yaml`
+- `google_assistant.example.yaml`
+
+Current bridge split:
+
+- `Home Assistant -> backend`: local HTTP `POST /api/media/command`
+- `backend -> Home Assistant`: MQTT mirror topics
+- `frontend -> Home Assistant`: direct `REST + WebSocket` telemetry reads
+
+Current mirrored MQTT topics:
+
+- `jukebox/media/state`
+- `jukebox/system/health`
+- `jukebox/system/event`
+
+The media-state mirror now also carries a nested `spotify` summary block so HA can expose:
+
+- Spotify auth status
+- Spotify account tier
+- Spotify device name
+- Spotify transfer status
+- Spotify last error
+- Spotify authenticated / active-device binary sensors
+
+Backend runtime env for the MQTT mirror:
+
+- `HAJUKEBOX_MQTT_BROKER_URL`
+- `HAJUKEBOX_MQTT_USERNAME`
+- `HAJUKEBOX_MQTT_PASSWORD`
+- `HAJUKEBOX_MQTT_CLIENT_ID`
+- `HAJUKEBOX_MQTT_TOPIC_PREFIX`
+
+State and health topics should stay retained. Event topics should stay non-retained.
+
 ### Optional later
 
-- expose selected entities to `Assist` or `Google Assistant`
-- mirror Spotify source state
+- link a real `Google Assistant` / Google Home project to the exposed HA request entities
 - trigger Spotify-related scripts once the browser player path exists
 
 ## Required Integrations
@@ -131,6 +171,16 @@ Use stable names early so frontend, backend, and HA automations do not drift.
 ### Optional summary mirrors
 
 - `sensor.hajukebox_last_event`
+- `sensor.hajukebox_spotify_auth_status`
+- `sensor.hajukebox_spotify_account_tier`
+- `sensor.hajukebox_spotify_device`
+- `sensor.hajukebox_spotify_transfer_status`
+- `sensor.hajukebox_spotify_last_error`
+- `binary_sensor.hajukebox_spotify_authenticated`
+- `binary_sensor.hajukebox_spotify_active_device`
+- `input_text.hajukebox_last_voice_source`
+- `input_text.hajukebox_last_voice_command`
+- `input_text.hajukebox_last_voice_response`
 
 Append-only logs should not be modeled as many separate Home Assistant sensors.
 Use MQTT or backend event streams for the raw feed and mirror only summary state into HA when needed.
@@ -143,6 +193,7 @@ Use MQTT or backend event streams for the raw feed and mirror only summary state
 - `script.hajukebox_pause`
 - `script.hajukebox_next`
 - `script.hajukebox_previous`
+- `script.hajukebox_seek`
 - `script.hajukebox_set_volume`
 - `script.hajukebox_set_mode`
 
@@ -159,6 +210,40 @@ Use MQTT or backend event streams for the raw feed and mirror only summary state
 - clap shortcut to mode switching
 - Spotify source switch automation
 - Assist or Google-triggered scripts
+
+## Google Assistant Trigger Path
+
+The repository now includes a first real `Google Assistant`-ready slice:
+
+- dedicated `input_button` request entities meant to be exposed through the official HA `Google Assistant` integration
+- HA automations that translate those requests into the existing `HAJukeBox` media scripts
+- HA helper entities that store the latest voice source, command, and response for dashboards and the frontend
+
+Implemented files:
+
+- `packages/jukebox_google_assistant.yaml`
+- `google_assistant.example.yaml`
+
+Request entities prepared for exposure:
+
+- `input_button.hajukebox_google_play_request`
+- `input_button.hajukebox_google_pause_request`
+- `input_button.hajukebox_google_next_request`
+- `input_button.hajukebox_google_previous_request`
+
+Voice feedback helpers:
+
+- `input_text.hajukebox_last_voice_source`
+- `input_text.hajukebox_last_voice_command`
+- `input_text.hajukebox_last_voice_response`
+
+The example config intentionally stays outside the live `configuration.yaml` load path because real Google setup still needs:
+
+- external HA access with SSL
+- a Google Home Developer Console project
+- a real `SERVICE_ACCOUNT.json`
+
+Do not use the old `Dialogflow -> Google Assistant` path for this project.
 
 ## MQTT Contract
 
@@ -202,6 +287,11 @@ This keeps `Home Assistant` visible as the runtime brain while still allowing th
 
 If the assignment is interpreted strictly during grading, `Home Assistant` must still expose enough mirrored media state and scripts so the system can be defended as HA-centered.
 
+For local browser development, allow the Vite origin in `http.cors_allowed_origins`, for example:
+
+- `http://127.0.0.1:5173`
+- `http://localhost:5173`
+
 ## Suggested Folder Layout
 
 ```text
@@ -209,18 +299,17 @@ homeassistant/
   README.md
   TODO.md
   configuration.yaml
+  google_assistant.example.yaml
   packages/
-    jukebox_helpers.yaml
-    jukebox_mqtt.yaml
-    jukebox_entities.yaml
+    jukebox_media_bridge.yaml
+    jukebox_google_assistant.yaml
   automations/
     jukebox_presence.yaml
     jukebox_media.yaml
     jukebox_logging.yaml
   scripts/
-    jukebox_commands.yaml
+    jukebox_media.yaml
 ```
-
 ## Definition Of Done
 
 ### Baseline done
@@ -250,4 +339,6 @@ homeassistant/
 - Home Assistant WebSocket API: https://developers.home-assistant.io/docs/api/websocket/
 - Home Assistant Windows install: https://www.home-assistant.io/installation/windows/
 - Home Assistant Ping integration: https://www.home-assistant.io/integrations/ping/
+- Home Assistant Google Assistant integration: https://www.home-assistant.io/integrations/google_assistant/
+- Home Assistant Dialogflow note: https://www.home-assistant.io/integrations/dialogflow/
 - Project master plan: ../docs/idea/master-plan.md

@@ -66,9 +66,30 @@ function buildDetailChips(
   telemetryState: DataAvailabilityState,
 ) {
   const chips: string[] = [];
+  const backendRuntime = state.telemetry.system.backendRuntime;
 
   if (state.connectionStatus === "disconnected") {
     chips.push("Last snapshot only");
+  }
+
+  if (backendRuntime.status === "degraded") {
+    if (backendRuntime.haBridgeStatus === "disabled") {
+      chips.push("HA bridge disabled");
+    } else if (backendRuntime.haBridgeStatus === "degraded") {
+      chips.push("HA bridge degraded");
+    } else if (backendRuntime.mediaLibraryStatus === "degraded") {
+      chips.push("Library degraded");
+    } else {
+      chips.push("Backend degraded");
+    }
+  } else if (backendRuntime.status === "unavailable") {
+    if (backendRuntime.mediaLibraryStatus === "unavailable") {
+      chips.push("Library unavailable");
+    } else if (backendRuntime.haBridgeStatus === "unavailable") {
+      chips.push("HA bridge unavailable");
+    } else {
+      chips.push("Backend unavailable");
+    }
   }
 
   switch (libraryState) {
@@ -125,6 +146,7 @@ export function buildAppShellStatusViewModel(
   providerStatus: JukeboxProviderStatus,
   error: string | null,
 ): AppShellStatusViewModel {
+  const backendRuntime = state.telemetry.system.backendRuntime;
   const libraryState = resolveCollectionState(
     providerStatus,
     state.connectionStatus,
@@ -187,6 +209,38 @@ export function buildAppShellStatusViewModel(
       headline: "Live updates are paused",
       copy:
         "The UI keeps the last known snapshot until Home Assistant and MQTT reconnect.",
+      detailChips,
+      libraryState,
+      playlistState,
+      telemetryState,
+    };
+  }
+
+  if (backendRuntime.status === "unavailable") {
+    return {
+      tone: "danger",
+      label: "Unavailable",
+      headline: "Backend runtime is unavailable",
+      copy:
+        backendRuntime.mediaLibraryReason ??
+        backendRuntime.haBridgeReason ??
+        "The backend is reachable, but its runtime baseline is not ready for local playback.",
+      detailChips,
+      libraryState,
+      playlistState,
+      telemetryState,
+    };
+  }
+
+  if (backendRuntime.status === "degraded") {
+    return {
+      tone: "warning",
+      label: "Degraded",
+      headline: "Backend runtime is degraded",
+      copy:
+        backendRuntime.haBridgeReason ??
+        backendRuntime.mediaLibraryReason ??
+        "One backend dependency needs attention, but the main shell can still operate.",
       detailChips,
       libraryState,
       playlistState,

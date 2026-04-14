@@ -1,0 +1,69 @@
+hajukebox_play:
+  alias: HAJukeBox Play
+  mode: queued
+  sequence:
+    - service: rest_command.hajukebox_media_command
+      data:
+        payload: '{"type":"play"}'
+
+hajukebox_pause:
+  alias: HAJukeBox Pause
+  mode: queued
+  sequence:
+    - service: rest_command.hajukebox_media_command
+      data:
+        payload: '{"type":"pause"}'
+
+hajukebox_next:
+  alias: HAJukeBox Next
+  mode: queued
+  sequence:
+    - service: rest_command.hajukebox_media_command
+      data:
+        payload: '{"type":"next"}'
+
+hajukebox_previous:
+  alias: HAJukeBox Previous
+  mode: queued
+  sequence:
+    - service: rest_command.hajukebox_media_command
+      data:
+        payload: '{"type":"previous"}'
+
+hajukebox_seek:
+  alias: HAJukeBox Seek
+  mode: queued
+  fields:
+    progress_percent:
+      name: Progress percent
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: slider
+          unit_of_measurement: "%"
+  sequence:
+    - service: rest_command.hajukebox_media_command
+      data:
+        payload: >-
+          {"type":"seek","progressPercent":{{ progress_percent | int(0) }}}
+
+hajukebox_set_volume:
+  alias: HAJukeBox Set Volume
+  mode: queued
+  fields:
+    volume_percent:
+      name: Volume percent
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: slider
+          unit_of_measurement: "%"
+  sequence:
+    - service: rest_command.hajukebox_media_command
+      data:
+        payload: >-
+          {"type":"set_volume","volumePercent":{{ volume_percent | int(0) }}}

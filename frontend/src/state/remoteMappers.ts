@@ -1,15 +1,23 @@
 import type {
+  BackendDependencyStatus,
   ConnectionStatus,
   JukeboxAppState,
   JukeboxPlaylist,
   JukeboxTrack,
   LibraryState,
   MediaState,
+  SpotifyState,
+  SystemHealthState,
   TelemetryState,
 } from "./jukeboxTypes";
 import {
   DEFAULT_HA_ENTITY_MAP,
+  type BackendDependencyHealthPayload,
+  type BackendHealthPayload,
   type BackendPlaylistPayload,
+  type BackendSpotifyPlaybackPayload,
+  type BackendSpotifySessionPayload,
+  type BackendSpotifyTrackPayload,
   type BackendSnapshot,
   type BackendTrackPayload,
   type HomeAssistantEntityMap,
@@ -51,12 +59,48 @@ function parseTrackId(value: number | string | undefined | null) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
+function hashTrackId(value: string) {
+  let hash = 0;
+
+  for (const character of value) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+
+  return hash || 1;
+}
+
+function normalizeTrackId(
+  value: number | string | undefined | null,
+  fallbackId: number,
+  fallbackIndex = 0,
+) {
+  const parsed = parseTrackId(value);
+
+  if (parsed !== null) {
+    return parsed;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    return hashTrackId(value.trim());
+  }
+
+  return fallbackId || fallbackIndex + 1;
+}
+
 function formatMetric(value: number | null, unit: string, fallback: string) {
   if (value === null) {
     return fallback;
   }
 
   return `${Math.round(value)} ${unit}`;
+}
+
+function formatDurationMs(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function formatTimeLabel(timestamp: string | undefined, fallback: string) {
@@ -73,6 +117,15 @@ function formatTimeLabel(timestamp: string | undefined, fallback: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function getTrimmedString(value: string | null | undefined) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function findEntity(
@@ -112,8 +165,7 @@ function normalizeTrackPayload(
   fallbackTrack: JukeboxTrack,
   fallbackIndex = 0,
 ): JukeboxTrack {
-  const id =
-    parseTrackId(payload.id) ?? parseTrackId(fallbackTrack.id) ?? fallbackIndex + 1;
+  const id = normalizeTrackId(payload.id, fallbackTrack.id, fallbackIndex);
 
   return {
     id,
@@ -173,6 +225,163 @@ function appendClapTrace(
   return [...previousTrace.slice(-(MAX_CLAP_TRACE_POINTS - 1)), nextBar];
 }
 
+function normalizeBackendRuntimeStatus(
+  status: BackendHealthPayload["status"],
+  fallback: SystemHealthState["backendRuntime"]["status"],
+): SystemHealthState["backendRuntime"]["status"] {
+  switch (status) {
+    case "ok":
+    case "degraded":
+    case "unavailable":
+      return status;
+    default:
+      return fallback;
+  }
+}
+
+function normalizeDependencyStatus(
+  status: BackendDependencyHealthPayload["status"],
+  fallback: BackendDependencyStatus,
+): BackendDependencyStatus {
+  switch (status) {
+    case "ready":
+    case "degraded":
+    case "unavailable":
+    case "disabled":
+      return status;
+    default:
+      return fallback;
+  }
+}
+
+function normalizeSpotifyAuthStatus(
+  status: BackendSpotifySessionPayload["authStatus"],
+  fallback: SpotifyState["authStatus"],
+): SpotifyState["authStatus"] {
+  switch (status) {
+    case "disconnected":
+    case "authorizing":
+    case "connected":
+    case "error":
+      return status;
+    default:
+      return fallback;
+  }
+}
+
+function normalizeSpotifySdkStatus(
+  status: BackendSpotifyPlaybackPayload["sdkStatus"],
+  fallback: SpotifyState["sdkStatus"],
+): SpotifyState["sdkStatus"] {
+  switch (status) {
+    case "idle":
+    case "loading":
+    case "ready":
+    case "not_ready":
+    case "error":
+      return status;
+    default:
+      return fallback;
+  }
+}
+
+function normalizeSpotifyTransferStatus(
+  status: BackendSpotifyPlaybackPayload["transferStatus"],
+  fallback: SpotifyState["transferStatus"],
+): SpotifyState["transferStatus"] {
+  switch (status) {
+    case "idle":
+    case "pending":
+    case "active":
+    case "error":
+      return status;
+    default:
+      return fallback;
+  }
+}
+
+function normalizeSpotifyAccountTier(
+  status: BackendSpotifySessionPayload["accountTier"],
+  fallback: SpotifyState["accountTier"],
+): SpotifyState["accountTier"] {
+  switch (status) {
+    case "unknown":
+    case "free":
+    case "premium":
+      return status;
+    default:
+      return fallback;
+  }
+}
+
+function mapBackendHealthToSystem(
+  snapshot: BackendSnapshot,
+  previousSystem: SystemHealthState,
+): SystemHealthState {
+  const health = snapshot.health;
+
+  if (!health) {
+    return previousSystem;
+  }
+
+  const previousRuntime = previousSystem.backendRuntime;
+  const mediaLibrary = health.dependencies?.mediaLibrary;
+  const haBridge = health.dependencies?.haBridge;
+
+  return {
+    ...previousSystem,
+    backendRuntime: {
+      status: normalizeBackendRuntimeStatus(
+        health.status,
+        previousRuntime.status,
+      ),
+      service:
+        getTrimmedString(health.service) ?? previousRuntime.service,
+      updatedAt: health.timestamp ?? previousRuntime.updatedAt,
+      mediaLibraryStatus: normalizeDependencyStatus(
+        mediaLibrary?.status,
+        previousRuntime.mediaLibraryStatus,
+      ),
+      mediaLibraryReason:
+        getTrimmedString(mediaLibrary?.reason) ?? previousRuntime.mediaLibraryReason,
+      haBridgeStatus: normalizeDependencyStatus(
+        haBridge?.status,
+        previousRuntime.haBridgeStatus,
+      ),
+      haBridgeReason:
+        getTrimmedString(haBridge?.reason) ?? previousRuntime.haBridgeReason,
+      lastSuccessfulPublishAt:
+        haBridge?.lastSuccessfulPublishAt ??
+        previousRuntime.lastSuccessfulPublishAt,
+    },
+  };
+}
+
+function normalizeSpotifyTrackPayload(
+  payload: BackendSpotifyTrackPayload,
+  fallbackTrack: JukeboxTrack | null,
+): JukeboxTrack | null {
+  const title = payload.title?.trim();
+
+  if (!title) {
+    return fallbackTrack;
+  }
+
+  const durationMs = parseNumber(payload.durationMs) ?? 0;
+
+  return {
+    id: normalizeTrackId(payload.id, fallbackTrack?.id ?? 900),
+    title,
+    artist: payload.artist?.trim() || fallbackTrack?.artist || "Spotify",
+    album: payload.album?.trim() || fallbackTrack?.album || "Spotify",
+    duration: formatDurationMs(durationMs),
+    coverUrl:
+      payload.coverUrl?.trim() ||
+      fallbackTrack?.coverUrl ||
+      "/covers/midnight-groove.png",
+  };
+}
+
 export function deriveConnectionStatus(
   haStatus: ConnectionStatus,
   backendStatus: ConnectionStatus,
@@ -208,6 +417,9 @@ export function mapHomeAssistantSnapshotToTelemetry(
   );
   const reasonEntity = findEntity(snapshot.entities, entityMap.presenceReason);
   const clapCountEntity = findEntity(snapshot.entities, entityMap.clapCountToday);
+  const voiceSourceEntity = findEntity(snapshot.entities, entityMap.voiceSource);
+  const voiceCommandEntity = findEntity(snapshot.entities, entityMap.voiceCommand);
+  const voiceResponseEntity = findEntity(snapshot.entities, entityMap.voiceResponse);
   const rssiEntity = findEntity(snapshot.entities, entityMap.esp32Rssi);
   const latencyEntity = findEntity(snapshot.entities, entityMap.brokerLatencyMs);
   const uptimeEntity = findEntity(snapshot.entities, entityMap.uptime);
@@ -229,6 +441,11 @@ export function mapHomeAssistantSnapshotToTelemetry(
     snapshot.receivedAt ??
     distanceEntity?.last_updated ??
     clapCountEntity?.last_updated;
+  const nextVoiceUpdatedAt =
+    voiceCommandEntity?.last_updated ??
+    voiceResponseEntity?.last_updated ??
+    voiceSourceEntity?.last_updated ??
+    snapshot.receivedAt;
 
   return {
     presence: {
@@ -249,6 +466,24 @@ export function mapHomeAssistantSnapshotToTelemetry(
             )
           : previousTelemetry.presence.lastClapAt,
       lastMode: getEntityString(modeEntity, previousTelemetry.presence.lastMode),
+    },
+    voiceAssistant: {
+      source: getEntityString(
+        voiceSourceEntity,
+        previousTelemetry.voiceAssistant.source,
+      ),
+      command: getEntityString(
+        voiceCommandEntity,
+        previousTelemetry.voiceAssistant.command,
+      ),
+      response: getEntityString(
+        voiceResponseEntity,
+        previousTelemetry.voiceAssistant.response,
+      ),
+      updatedAt: formatTimeLabel(
+        nextVoiceUpdatedAt,
+        previousTelemetry.voiceAssistant.updatedAt,
+      ),
     },
     distanceSeries: distanceEntity
       ? appendDistancePoint(previousTelemetry.distanceSeries, nextDistance, nextTimestamp)
@@ -278,6 +513,7 @@ export function mapHomeAssistantSnapshotToTelemetry(
         "ms",
         previousTelemetry.system.brokerLatency,
       ),
+      backendRuntime: previousTelemetry.system.backendRuntime,
     },
     automationLanes:
       snapshot.automationLanes ?? previousTelemetry.automationLanes,
@@ -330,7 +566,7 @@ export function mapBackendSnapshotToMedia(
       parseNumber(mediaPayload.volumePercent) ?? previousMedia.volumePercent,
     ),
     activeTrackId:
-      parseTrackId(mediaPayload.activeTrackId) ?? normalizedActiveTrack.id,
+      normalizeTrackId(mediaPayload.activeTrackId, normalizedActiveTrack.id),
     activeTrack: normalizedActiveTrack,
     queue: normalizedQueue,
     audio: {
@@ -369,6 +605,106 @@ export function mapBackendSnapshotToLibrary(
   };
 }
 
+export function mapBackendSnapshotToSpotify(
+  snapshot: BackendSnapshot,
+  previousSpotify: SpotifyState,
+): SpotifyState {
+  const session = snapshot.spotifySession;
+  const playback = snapshot.spotifyPlayback;
+
+  if (!session && !playback) {
+    return previousSpotify;
+  }
+
+  let nextSpotify: SpotifyState = {
+    ...previousSpotify,
+  };
+
+  if (session) {
+    const authenticated = Boolean(session.authenticated);
+
+    nextSpotify = {
+      ...nextSpotify,
+      configured: session.configured ?? nextSpotify.configured,
+      authStatus: normalizeSpotifyAuthStatus(
+        session.authStatus,
+        authenticated ? "connected" : nextSpotify.authStatus,
+      ),
+      accountTier: normalizeSpotifyAccountTier(
+        session.accountTier,
+        nextSpotify.accountTier,
+      ),
+      scopes:
+        session.scopes && session.scopes.length > 0
+          ? [...session.scopes]
+          : nextSpotify.scopes,
+      expiresAt: session.expiresAt ?? nextSpotify.expiresAt,
+      lastError: getTrimmedString(session.lastError) ?? nextSpotify.lastError,
+      mockMode:
+        session.mockMode === undefined ? nextSpotify.mockMode : session.mockMode,
+    };
+
+    if (!authenticated) {
+      nextSpotify = {
+        ...nextSpotify,
+        authStatus: normalizeSpotifyAuthStatus(
+          session.authStatus,
+          "disconnected",
+        ),
+        transferStatus:
+          nextSpotify.authStatus === "error" ? "error" : "idle",
+        isActiveDevice: false,
+        deviceId: null,
+        currentTrack: null,
+        positionMs: 0,
+        durationMs: 0,
+      };
+    }
+  }
+
+  if (playback) {
+    const fallbackTrack = nextSpotify.currentTrack ?? previousSpotify.currentTrack;
+    const normalizedTrack = playback.currentTrack
+      ? normalizeSpotifyTrackPayload(playback.currentTrack, fallbackTrack)
+      : playback.authenticated
+        ? nextSpotify.currentTrack
+        : null;
+
+    nextSpotify = {
+      ...nextSpotify,
+      sdkStatus: normalizeSpotifySdkStatus(
+        playback.sdkStatus,
+        nextSpotify.sdkStatus,
+      ),
+      transferStatus: normalizeSpotifyTransferStatus(
+        playback.transferStatus,
+        nextSpotify.transferStatus,
+      ),
+      deviceId: getTrimmedString(playback.deviceId) ?? nextSpotify.deviceId,
+      deviceName:
+        getTrimmedString(playback.deviceName) ?? nextSpotify.deviceName,
+      isActiveDevice:
+        typeof playback.isActiveDevice === "boolean"
+          ? playback.isActiveDevice
+          : nextSpotify.isActiveDevice,
+      currentTrack: normalizedTrack,
+      positionMs: Math.max(
+        0,
+        Math.round(parseNumber(playback.positionMs) ?? nextSpotify.positionMs),
+      ),
+      durationMs: Math.max(
+        0,
+        Math.round(parseNumber(playback.durationMs) ?? nextSpotify.durationMs),
+      ),
+      lastError: getTrimmedString(playback.lastError) ?? nextSpotify.lastError,
+      mockMode:
+        playback.mockMode === undefined ? nextSpotify.mockMode : playback.mockMode,
+    };
+  }
+
+  return nextSpotify;
+}
+
 export function buildJukeboxStateFromRemoteSnapshots(
   previousState: JukeboxAppState,
   snapshots: {
@@ -394,11 +730,21 @@ export function buildJukeboxStateFromRemoteSnapshots(
         nextMedia.activeTrack,
       )
     : previousState.library;
+  const nextSpotify = snapshots.backend
+    ? mapBackendSnapshotToSpotify(snapshots.backend, previousState.spotify)
+    : previousState.spotify;
   const nextTelemetry =
-    snapshots.backend?.eventLog !== undefined
+    snapshots.backend
       ? {
           ...nextTelemetryBase,
-          eventLog: snapshots.backend.eventLog,
+          system: mapBackendHealthToSystem(
+            snapshots.backend,
+            nextTelemetryBase.system,
+          ),
+          eventLog:
+            snapshots.backend.eventLog !== undefined
+              ? snapshots.backend.eventLog
+              : nextTelemetryBase.eventLog,
         }
       : nextTelemetryBase;
   const nextConnectionStatus =
@@ -414,8 +760,12 @@ export function buildJukeboxStateFromRemoteSnapshots(
   return {
     ...previousState,
     connectionStatus: nextConnectionStatus,
-    media: nextMedia,
+    media: {
+      ...nextMedia,
+      spotifyConnected: nextSpotify.authStatus === "connected",
+    },
     library: nextLibrary,
     telemetry: nextTelemetry,
+    spotify: nextSpotify,
   };
 }

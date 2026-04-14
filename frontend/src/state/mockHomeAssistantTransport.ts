@@ -26,6 +26,21 @@ function buildMockEntityStates(): HomeAssistantEntityState[] {
       last_updated: new Date().toISOString(),
     },
     {
+      entity_id: DEFAULT_HA_ENTITY_MAP.voiceSource,
+      state: mockJukeboxState.telemetry.voiceAssistant.source,
+      last_updated: new Date().toISOString(),
+    },
+    {
+      entity_id: DEFAULT_HA_ENTITY_MAP.voiceCommand,
+      state: mockJukeboxState.telemetry.voiceAssistant.command,
+      last_updated: new Date().toISOString(),
+    },
+    {
+      entity_id: DEFAULT_HA_ENTITY_MAP.voiceResponse,
+      state: mockJukeboxState.telemetry.voiceAssistant.response,
+      last_updated: new Date().toISOString(),
+    },
+    {
       entity_id: DEFAULT_HA_ENTITY_MAP.esp32Rssi,
       state: "-65",
     },

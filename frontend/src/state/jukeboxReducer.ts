@@ -125,13 +125,22 @@ export function applyJukeboxCommand(
     case "spotify_authorize":
       return {
         ...state,
-        media: {
-          ...state.media,
-          spotifyConnected: true,
-        },
         spotify: {
           ...state.spotify,
-          authStatus: "connected",
+          authStatus: "authorizing",
+          lastError: null,
+        },
+      };
+
+    case "spotify_initialize":
+      return {
+        ...state,
+        spotify: {
+          ...state.spotify,
+          authStatus:
+            state.spotify.authStatus === "disconnected"
+              ? "disconnected"
+              : "connected",
           sdkStatus: "loading",
           transferStatus: "idle",
           isActiveDevice: false,
@@ -146,8 +155,64 @@ export function applyJukeboxCommand(
           ...state.spotify,
           authStatus: "connected",
           sdkStatus: "ready",
+          transferStatus:
+            state.spotify.transferStatus === "active"
+              ? "active"
+              : state.spotify.transferStatus,
           deviceId: command.deviceId ?? state.spotify.deviceId ?? "spotify-web-player-1",
           deviceName: command.deviceName ?? state.spotify.deviceName,
+          lastError: null,
+        },
+      };
+
+    case "spotify_sdk_not_ready":
+      return {
+        ...state,
+        spotify: {
+          ...state.spotify,
+          sdkStatus: "not_ready",
+          deviceId: command.deviceId ?? state.spotify.deviceId,
+          isActiveDevice: false,
+          transferStatus:
+            state.spotify.transferStatus === "active" ? "pending" : "idle",
+          lastError: null,
+        },
+      };
+
+    case "spotify_sdk_error":
+      return {
+        ...state,
+        spotify: {
+          ...state.spotify,
+          authStatus:
+            state.spotify.authStatus === "disconnected"
+              ? "error"
+              : state.spotify.authStatus,
+          sdkStatus: "error",
+          transferStatus: "error",
+          isActiveDevice: false,
+          lastError: command.message,
+        },
+      };
+
+    case "spotify_playback_state_changed":
+      return {
+        ...state,
+        spotify: {
+          ...state.spotify,
+          authStatus:
+            state.spotify.authStatus === "disconnected"
+              ? "connected"
+              : state.spotify.authStatus,
+          currentTrack: command.currentTrack,
+          positionMs: Math.max(0, Math.round(command.positionMs)),
+          durationMs: Math.max(0, Math.round(command.durationMs)),
+          isActiveDevice:
+            state.spotify.sdkStatus === "ready" ? true : state.spotify.isActiveDevice,
+          transferStatus:
+            state.spotify.sdkStatus === "ready"
+              ? "active"
+              : state.spotify.transferStatus,
           lastError: null,
         },
       };
@@ -159,8 +224,8 @@ export function applyJukeboxCommand(
           ...state.spotify,
           authStatus: "connected",
           sdkStatus: state.spotify.sdkStatus === "idle" ? "ready" : state.spotify.sdkStatus,
-          transferStatus: "active",
-          isActiveDevice: true,
+          transferStatus: "pending",
+          isActiveDevice: false,
           lastError: null,
         },
       };
@@ -177,8 +242,13 @@ export function applyJukeboxCommand(
           authStatus: "disconnected",
           sdkStatus: "idle",
           transferStatus: "idle",
+          accountTier:
+            state.spotify.mockMode === null ? "unknown" : state.spotify.accountTier,
           deviceId: null,
           isActiveDevice: false,
+          currentTrack: null,
+          positionMs: 0,
+          durationMs: 0,
           lastError: null,
         },
       };

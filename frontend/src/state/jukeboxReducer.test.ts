@@ -33,28 +33,28 @@ describe("applyJukeboxCommand", () => {
     expect(unchangedState).toBe(mockJukeboxState);
   });
 
-  it("authorizes the Spotify sketch and moves the SDK into loading state", () => {
+  it("marks Spotify auth as in-progress until backend callback completes", () => {
     const spotifyState = applyJukeboxCommand(mockJukeboxState, {
       type: "spotify_authorize",
     });
 
-    expect(spotifyState.media.spotifyConnected).toBe(true);
-    expect(spotifyState.spotify.authStatus).toBe("connected");
-    expect(spotifyState.spotify.sdkStatus).toBe("loading");
+    expect(spotifyState.media.spotifyConnected).toBe(false);
+    expect(spotifyState.spotify.authStatus).toBe("authorizing");
+    expect(spotifyState.spotify.sdkStatus).toBe("idle");
   });
 
-  it("activates the Spotify browser player after transfer playback", () => {
+  it("marks transfer pending until backend playback state confirms activation", () => {
     const readyState = applyJukeboxCommand(mockJukeboxState, {
       type: "spotify_sdk_ready",
       deviceId: "spotify-web-player-1",
       deviceName: "HAJukeBox Web Player",
     });
-    const activeState = applyJukeboxCommand(readyState, {
+    const pendingState = applyJukeboxCommand(readyState, {
       type: "spotify_transfer_playback",
     });
 
-    expect(activeState.spotify.deviceId).toBe("spotify-web-player-1");
-    expect(activeState.spotify.transferStatus).toBe("active");
-    expect(activeState.spotify.isActiveDevice).toBe(true);
+    expect(pendingState.spotify.deviceId).toBe("spotify-web-player-1");
+    expect(pendingState.spotify.transferStatus).toBe("pending");
+    expect(pendingState.spotify.isActiveDevice).toBe(false);
   });
 });

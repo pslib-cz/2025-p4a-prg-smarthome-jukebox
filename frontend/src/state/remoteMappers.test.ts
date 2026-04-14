@@ -4,6 +4,7 @@ import {
   buildJukeboxStateFromRemoteSnapshots,
   deriveConnectionStatus,
   mapBackendSnapshotToMedia,
+  mapBackendSnapshotToSpotify,
   mapHomeAssistantSnapshotToTelemetry,
 } from "./remoteMappers";
 import type {
@@ -24,6 +25,19 @@ describe("mapHomeAssistantSnapshotToTelemetry", () => {
           state: "Mobile beacon + distance lock",
         },
         { entity_id: "sensor.hajukebox_clap_count_today", state: "15" },
+        {
+          entity_id: "input_text.hajukebox_last_voice_source",
+          state: "Google Assistant",
+        },
+        {
+          entity_id: "input_text.hajukebox_last_voice_command",
+          state: "Play music",
+          last_updated: "2026-03-24T10:14:00Z",
+        },
+        {
+          entity_id: "input_text.hajukebox_last_voice_response",
+          state: "Starting local playback",
+        },
         { entity_id: "sensor.hajukebox_esp32_rssi", state: "-58" },
         { entity_id: "sensor.hajukebox_broker_latency_ms", state: "16" },
         { entity_id: "sensor.hajukebox_uptime", state: "14 h 03 m" },
@@ -53,6 +67,10 @@ describe("mapHomeAssistantSnapshotToTelemetry", () => {
     expect(telemetry.presence.confidencePercent).toBe(91);
     expect(telemetry.presence.clapCountToday).toBe(15);
     expect(telemetry.system.mqttStatus).toBe("Connected");
+    expect(telemetry.voiceAssistant.source).toBe("Google Assistant");
+    expect(telemetry.voiceAssistant.command).toBe("Play music");
+    expect(telemetry.voiceAssistant.response).toBe("Starting local playback");
+    expect(telemetry.voiceAssistant.updatedAt).toMatch(/^\d{2}:\d{2}$/u);
     expect(telemetry.distanceSeries.at(-1)?.value).toBe(37);
     expect(telemetry.clapTrace.at(-1)).toBe(100);
   });
@@ -193,6 +211,51 @@ describe("mapBackendSnapshotToMedia", () => {
   });
 });
 
+describe("mapBackendSnapshotToSpotify", () => {
+  it("maps backend Spotify session and playback into shared Spotify state", () => {
+    const spotify = mapBackendSnapshotToSpotify(
+      {
+        connectionStatus: "connected",
+        spotifySession: {
+          configured: true,
+          authenticated: true,
+          authStatus: "connected",
+          accountTier: "premium",
+          scopes: ["streaming", "user-read-playback-state"],
+          expiresAt: "2026-03-24T10:40:00Z",
+        },
+        spotifyPlayback: {
+          authenticated: true,
+          sdkStatus: "ready",
+          transferStatus: "active",
+          deviceId: "spotify-web-player-1",
+          deviceName: "HAJukeBox Web Player",
+          isActiveDevice: true,
+          positionMs: 42000,
+          durationMs: 215000,
+          currentTrack: {
+            id: "spotify:track:abc123",
+            title: "Satellite Hearts",
+            artist: "Signal Arcade",
+            album: "Browser Playback",
+            durationMs: 215000,
+            coverUrl: "/covers/midnight-groove.png",
+          },
+        },
+      },
+      mockJukeboxState.spotify,
+    );
+
+    expect(spotify.configured).toBe(true);
+    expect(spotify.authStatus).toBe("connected");
+    expect(spotify.sdkStatus).toBe("ready");
+    expect(spotify.transferStatus).toBe("active");
+    expect(spotify.isActiveDevice).toBe(true);
+    expect(spotify.currentTrack?.title).toBe("Satellite Hearts");
+    expect(spotify.durationMs).toBe(215000);
+  });
+});
+
 describe("buildJukeboxStateFromRemoteSnapshots", () => {
   it("merges HA telemetry and backend media into one state tree", () => {
     const nextState = buildJukeboxStateFromRemoteSnapshots(mockJukeboxState, {
@@ -220,6 +283,40 @@ describe("buildJukeboxStateFromRemoteSnapshots", () => {
     expect(nextState.telemetry.presence.distanceCm).toBe(31);
     expect(nextState.media.isPlaying).toBe(true);
     expect(nextState.media.progressPercent).toBe(48);
+  });
+
+  it("maps backend runtime health into the shared system state", () => {
+    const nextState = buildJukeboxStateFromRemoteSnapshots(mockJukeboxState, {
+      backend: {
+        connectionStatus: "connected",
+        health: {
+          status: "degraded",
+          service: "hajukebox-backend",
+          timestamp: "2026-03-24T10:30:00Z",
+          dependencies: {
+            mediaLibrary: {
+              status: "ready",
+            },
+            haBridge: {
+              status: "disabled",
+              reason: "Home Assistant MQTT bridge is not configured.",
+              lastSuccessfulPublishAt: "2026-03-24T10:28:00Z",
+            },
+          },
+        },
+      },
+    });
+
+    expect(nextState.telemetry.system.backendRuntime.status).toBe("degraded");
+    expect(nextState.telemetry.system.backendRuntime.haBridgeStatus).toBe(
+      "disabled",
+    );
+    expect(nextState.telemetry.system.backendRuntime.haBridgeReason).toBe(
+      "Home Assistant MQTT bridge is not configured.",
+    );
+    expect(
+      nextState.telemetry.system.backendRuntime.lastSuccessfulPublishAt,
+    ).toBe("2026-03-24T10:28:00Z");
   });
 
   it("overrides telemetry event log with backend log when backend provides it", () => {
@@ -262,5 +359,33 @@ describe("buildJukeboxStateFromRemoteSnapshots", () => {
 
   it("marks the combined system as error when either side fails", () => {
     expect(deriveConnectionStatus("connected", "error")).toBe("error");
+  });
+
+  it("keeps local playback available when backend reports Spotify as disabled", () => {
+    const nextState = buildJukeboxStateFromRemoteSnapshots(mockJukeboxState, {
+      backend: {
+        connectionStatus: "connected",
+        media: {
+          source: "local",
+          spotifyConnected: false,
+        },
+        spotifySession: {
+          configured: false,
+          authenticated: false,
+          authStatus: "disconnected",
+          accountTier: "unknown",
+        },
+        spotifyPlayback: {
+          authenticated: false,
+          sdkStatus: "idle",
+          transferStatus: "idle",
+          isActiveDevice: false,
+        },
+      },
+    });
+
+    expect(nextState.media.source).toBe("local");
+    expect(nextState.media.spotifyConnected).toBe(false);
+    expect(nextState.spotify.configured).toBe(false);
   });
 });

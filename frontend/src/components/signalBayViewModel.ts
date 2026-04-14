@@ -166,6 +166,136 @@ function stripBufferFromQuality(quality: string) {
   return quality.replace(/\s*·\s*Buffer\s+\d+%/i, "").trim();
 }
 
+function formatShortTime(timestamp: string | null | undefined, fallback: string) {
+  if (!timestamp) {
+    return fallback;
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+
+  return date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatRuntimeValue(status: TelemetryState["system"]["backendRuntime"]["status"]) {
+  switch (status) {
+    case "ok":
+      return "OK";
+    case "degraded":
+      return "Degraded";
+    case "unavailable":
+      return "Unavailable";
+    default:
+      return "Unknown";
+  }
+}
+
+function formatDependencyValue(
+  status: TelemetryState["system"]["backendRuntime"]["haBridgeStatus"],
+) {
+  switch (status) {
+    case "ready":
+      return "Ready";
+    case "disabled":
+      return "Disabled";
+    case "degraded":
+      return "Degraded";
+    case "unavailable":
+      return "Unavailable";
+    default:
+      return "Unknown";
+  }
+}
+
+function summarizeRuntimeReason(reason: string | null, fallback: string) {
+  if (!reason) {
+    return fallback;
+  }
+
+  const normalized = reason.trim().replace(/\.$/u, "");
+
+  if (normalized.length === 0) {
+    return fallback;
+  }
+
+  if (/not configured/iu.test(normalized)) {
+    return "No MQTT bridge configured";
+  }
+
+  if (/timed out/iu.test(normalized)) {
+    return "MQTT publish timeout";
+  }
+
+  if (/offline/iu.test(normalized)) {
+    return "MQTT bridge offline";
+  }
+
+  if (/failed to publish/iu.test(normalized)) {
+    return "Mirror publish failed";
+  }
+
+  return normalized.length <= 30 ? normalized : `${normalized.slice(0, 27)}...`;
+}
+
+function getBackendRuntimeTone(
+  status: TelemetryState["system"]["backendRuntime"]["status"],
+): SystemHealthView["tone"] {
+  switch (status) {
+    case "ok":
+      return "good";
+    case "degraded":
+      return "accent";
+    default:
+      return "soft";
+  }
+}
+
+function getHaMirrorTone(
+  status: TelemetryState["system"]["backendRuntime"]["haBridgeStatus"],
+): SystemHealthView["tone"] {
+  switch (status) {
+    case "ready":
+      return "good";
+    case "disabled":
+    case "degraded":
+      return "accent";
+    default:
+      return "soft";
+  }
+}
+
+function getBackendRuntimeStatus(system: TelemetryState["system"]) {
+  const runtime = system.backendRuntime;
+
+  if (runtime.status === "ok") {
+    return `Updated ${formatShortTime(runtime.updatedAt, "just now")}`;
+  }
+
+  return summarizeRuntimeReason(
+    runtime.haBridgeReason ?? runtime.mediaLibraryReason,
+    "Dependency attention needed",
+  );
+}
+
+function getHaMirrorStatus(system: TelemetryState["system"]) {
+  const runtime = system.backendRuntime;
+
+  if (runtime.haBridgeStatus === "ready") {
+    return `Last publish ${formatShortTime(runtime.lastSuccessfulPublishAt, "ready")}`;
+  }
+
+  if (runtime.haBridgeStatus === "disabled") {
+    return "No MQTT bridge configured";
+  }
+
+  return summarizeRuntimeReason(runtime.haBridgeReason, "Mirror attention needed");
+}
+
 export function buildDistanceChartPoints(
   series: TelemetryState["distanceSeries"],
 ): DistanceChartPoint[] {
@@ -215,8 +345,22 @@ export function buildSignalBayViewModel(
       { label: "Fusion source", value: telemetry.presence.reason },
       { label: "Last clap", value: telemetry.presence.lastClapAt },
       { label: "Last mode", value: telemetry.presence.lastMode },
+      { label: "Voice source", value: telemetry.voiceAssistant.source },
+      { label: "Last voice", value: telemetry.voiceAssistant.command },
     ],
     systemHealth: [
+      {
+        label: "Backend runtime",
+        value: formatRuntimeValue(telemetry.system.backendRuntime.status),
+        status: getBackendRuntimeStatus(telemetry.system),
+        tone: getBackendRuntimeTone(telemetry.system.backendRuntime.status),
+      },
+      {
+        label: "HA mirror",
+        value: formatDependencyValue(telemetry.system.backendRuntime.haBridgeStatus),
+        status: getHaMirrorStatus(telemetry.system),
+        tone: getHaMirrorTone(telemetry.system.backendRuntime.haBridgeStatus),
+      },
       {
         label: "ESP32 RSSI",
         value: telemetry.system.rssiDbm,

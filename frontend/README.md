@@ -1,12 +1,18 @@
-# HAJukeBox Frontend Sketch
+# HAJukeBox Frontend
 
-Stylized frontend prototype for a smart jukebox project built with `React`, `TypeScript`, and `Vite`.
+Frontend dashboard for the smart jukebox project built with `React`, `TypeScript`, and `Vite`.
 
 The current repository focus is:
 - preserve the music-console visual identity
 - prepare the UI for real `Home Assistant`, backend, and `MQTT` data
 - deliver `local MP3` as the baseline media path
 - treat `Spotify` and `Google Assistant` as bonus integrations
+
+Current implementation reality:
+
+- backend media, library, and recent-log reads are already wired over HTTP
+- local MP3 playback already works in the browser through the backend stream endpoint
+- the next missing baseline piece is the real `Home Assistant` telemetry adapter and contract freeze
 
 ## Key Documents
 
@@ -37,3 +43,25 @@ npm run test
 npm run lint
 npm run build
 ```
+
+### Real Home Assistant Telemetry
+
+The frontend now uses a real `Home Assistant` REST + WebSocket transport when these env vars are present:
+
+```bash
+VITE_HA_BASE_URL=http://127.0.0.1:8123
+VITE_HA_TOKEN=your_long_lived_access_token
+```
+
+Optional:
+
+```bash
+VITE_HA_WEBSOCKET_URL=ws://127.0.0.1:8123/api/websocket
+VITE_HA_LOGBOOK_HOURS=6
+VITE_HA_EVENT_LOG_LIMIT=12
+VITE_HA_MODE=mock
+```
+
+If HA env is missing, the app falls back to the existing mock telemetry transport.
+
+For browser access from `Vite`, `Home Assistant` must allow the frontend origin through `http.cors_allowed_origins`.

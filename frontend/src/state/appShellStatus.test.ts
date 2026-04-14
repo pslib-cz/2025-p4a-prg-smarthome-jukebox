@@ -46,6 +46,21 @@ describe("buildAppShellStatusViewModel", () => {
     expect(viewModel.detailChips).toContain("Local library empty");
   });
 
+  it("surfaces degraded backend runtime even when the shell is otherwise connected", () => {
+    const degradedState = structuredClone(mockJukeboxState);
+    degradedState.telemetry.system.backendRuntime.status = "degraded";
+    degradedState.telemetry.system.backendRuntime.haBridgeStatus = "disabled";
+    degradedState.telemetry.system.backendRuntime.haBridgeReason =
+      "Home Assistant MQTT bridge is not configured.";
+
+    const viewModel = buildAppShellStatusViewModel(degradedState, "ready", null);
+
+    expect(viewModel.label).toBe("Degraded");
+    expect(viewModel.tone).toBe("warning");
+    expect(viewModel.copy).toContain("Home Assistant MQTT bridge");
+    expect(viewModel.detailChips).toContain("HA bridge disabled");
+  });
+
   it("surfaces offline mode when the connection drops before data arrives", () => {
     const disconnectedState = structuredClone(mockJukeboxState);
     disconnectedState.connectionStatus = "disconnected";

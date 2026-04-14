@@ -2,7 +2,7 @@ import { buildConfig } from "./config/env.js";
 import { buildApp } from "./app.js";
 
 const config = buildConfig();
-const app = buildApp({}, config.mediaLibraryPath);
+const app = buildApp({}, config.mediaLibraryPath, config.mqtt, config.spotify);
 
 async function start() {
   try {

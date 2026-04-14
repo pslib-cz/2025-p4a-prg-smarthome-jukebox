@@ -128,15 +128,28 @@ Důležitá interpretace:
 - `Spotify Web Playback SDK`
 - `Google Assistant`
 
+## Aktuální stav repa
+
+- `backend/` už vrací reálný lokální katalog, media state, media commandy, recent logy a stream endpoint pro jednotlivé tracky
+- `frontend/` už čte reálná backend data přes HTTP a umí přehrávat lokální MP3 v prohlížeči přes backend stream
+- hlavní baseline blocker už není samotný frontend-backend wiring, ale zafixování `Home Assistant` kontraktu, `MQTT` topiců a backend <-> HA bridge
+- křížové backend a kontraktové změny je vhodné vést přes `OpenSpec` artefakty v `openspec/changes/`
+
 ## Doporučené pořadí realizace
 
-1. Zprovoznit `Home Assistant` a `MQTT`
-2. Zafixovat HA entity a `MQTT` topicy
-3. Postavit vlastní mediální backend pro `Local MP3`
-4. Napojit frontend na reálnou telemetrii z `HA` a reálný mediální stav z backendu
-5. Stabilizovat základní demo flow
-6. Zkusit `Spotify`
-7. Zkusit `Google Assistant`
+1. Zafixovat kontrakty:
+   - backend media API
+   - `Home Assistant` entity
+   - `MQTT` topic namespace
+2. Stabilizovat `Local MP3` vertical slice:
+   - backend katalog + commandy + stream endpoint
+   - frontend browser playback + sync stavu
+3. Napojit frontend na reálnou telemetrii z `HA`
+4. Dokončit backend <-> `Home Assistant` bridge pro mediální příkazy a summary mirror
+5. Stabilizovat základní demo flow a failure handling
+6. Přidat realtime vrstvu jen pokud polling přestane stačit
+7. Zkusit `Spotify`
+8. Zkusit `Google Assistant`
 
 ## Rozdělení týmu
 

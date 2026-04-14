@@ -1,5 +1,7 @@
 # Home Assistant TODO
 
+Last reviewed: 2026-04-13
+
 Status legend:
 
 - `[ ]` not started
@@ -10,14 +12,15 @@ Status legend:
 
 - [ ] Decide where `Home Assistant` runs for the demo:
   dedicated host, mini PC, VM, or other always-on local machine
-- [ ] Freeze entity names before frontend and backend adapters are written
-- [ ] Freeze MQTT topic names before ESP32 and HA packages are written
+- [-] Freeze entity names before frontend and backend adapters are written
+- [-] Freeze MQTT topic names before ESP32 and HA packages are written
+- [x] Freeze how HA media scripts call the backend bridge
 - [ ] Freeze the second local HA integration needed for team-of-3 compliance
 
 ## Phase 1: Base Setup
 
 - [x] Install and boot `Home Assistant`
-- [ ] Create or reserve the final config structure inside this folder
+- [x] Create or reserve the final config structure inside this folder
 - [x] Install and configure the `MQTT` integration
 - [ ] Add the second local HA integration, recommended `Ping`
 - [ ] Verify API access for frontend development
@@ -35,21 +38,22 @@ Status legend:
 ## Phase 3: Helpers And Entity Model
 
 - [ ] Create `input_select.hajukebox_mode`
-- [ ] Create media source summary entity
+- [x] Create `sensor.hajukebox_media_source`
 - [ ] Create presence confidence and reason entities
 - [ ] Create clap count helper or mirrored daily count
-- [ ] Create backend-status helper
+- [x] Create `sensor.hajukebox_backend_status`
+- [x] Create media summary helpers mirrored from backend state
 - [ ] Keep names stable and frontend-friendly
 
 ## Phase 4: Scripts
 
-- [ ] Add `play`
-- [ ] Add `pause`
-- [ ] Add `next`
-- [ ] Add `previous`
-- [ ] Add `set_volume`
+- [x] Add `play` script that proxies the backend media path
+- [x] Add `pause` script that proxies the backend media path
+- [x] Add `next` script that proxies the backend media path
+- [x] Add `previous` script that proxies the backend media path
+- [x] Add `set_volume` script that proxies the backend media path
 - [ ] Add `set_mode`
-- [ ] Validate script calls from both HA UI and the backend bridge
+- [ ] Validate script calls from HA UI and automations into the backend bridge
 
 ## Phase 5: Automations
 
@@ -72,12 +76,14 @@ Status legend:
   MQTT connected state
   mode
   backend status
+- [ ] Confirm HA-exposed media summary is sufficient for demo defense
 - [ ] Decide which event-log items come from HA and which stay in MQTT or backend streams
 
 ## Phase 7: Bonus Paths
 
-- [ ] Expose selected entities to Assist or Google only after baseline is stable
-- [ ] Mirror Spotify source state into HA
+- [x] Add Google Assistant-ready request entities, automations, and voice feedback helpers
+- [ ] Link a real Google Home / Google Assistant project and run one manual smoke
+- [x] Mirror Spotify source state into HA
 - [ ] Add Spotify-triggered scripts only after the browser playback path exists
 
 ## Stop Rules

@@ -1,0 +1,9 @@
+homeassistant:
+  packages: !include_dir_named packages
+
+http:
+  cors_allowed_origins:
+    - http://127.0.0.1:5173
+    - http://localhost:5173
+
+script: !include_dir_merge_named scripts

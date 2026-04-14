@@ -61,5 +61,27 @@ export function getMediaState(): MediaStateSnapshot {
       bufferPercent: 100,
       dspProfile: "Flat",
     },
+    availability: {
+      overall: "ready",
+      library: {
+        status: "ready",
+        trackCount: tracks.length,
+        playlistCount: playlists.length,
+        pathConfigured: false,
+      },
+      player: {
+        status: "ready",
+        reason: null,
+      },
+    },
+    capabilities: {
+      play: true,
+      pause: true,
+      next: true,
+      previous: true,
+      seek: true,
+      setVolume: true,
+      playTrack: true,
+    },
   };
 }

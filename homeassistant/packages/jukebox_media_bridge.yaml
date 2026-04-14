@@ -1,0 +1,110 @@
+rest_command:
+  hajukebox_media_command:
+    url: "http://127.0.0.1:3000/api/media/command"
+    method: POST
+    content_type: "application/json"
+    timeout: 10
+    payload: "{{ payload }}"
+
+mqtt:
+  sensor:
+    - name: HAJukeBox Media Source
+      unique_id: hajukebox_media_source
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.sourceLabel }}"
+
+    - name: HAJukeBox Backend Status
+      unique_id: hajukebox_backend_status
+      state_topic: jukebox/system/health
+      value_template: "{{ value_json.backendStatus }}"
+
+    - name: HAJukeBox Media Title
+      unique_id: hajukebox_media_title
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.title }}"
+
+    - name: HAJukeBox Media Artist
+      unique_id: hajukebox_media_artist
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.artist }}"
+
+    - name: HAJukeBox Media Album
+      unique_id: hajukebox_media_album
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.album }}"
+
+    - name: HAJukeBox Media Progress Percent
+      unique_id: hajukebox_media_progress_percent
+      state_topic: jukebox/media/state
+      unit_of_measurement: "%"
+      value_template: "{{ value_json.progressPercent }}"
+
+    - name: HAJukeBox Media Duration Ms
+      unique_id: hajukebox_media_duration_ms
+      state_topic: jukebox/media/state
+      unit_of_measurement: "ms"
+      value_template: "{{ value_json.durationMs }}"
+
+    - name: HAJukeBox Media Position Ms
+      unique_id: hajukebox_media_position_ms
+      state_topic: jukebox/media/state
+      unit_of_measurement: "ms"
+      value_template: "{{ value_json.positionMs }}"
+
+    - name: HAJukeBox Media Volume Percent
+      unique_id: hajukebox_media_volume_percent
+      state_topic: jukebox/media/state
+      unit_of_measurement: "%"
+      value_template: "{{ value_json.volumePercent }}"
+
+    - name: HAJukeBox Spotify Auth Status
+      unique_id: hajukebox_spotify_auth_status
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.spotify.authStatus if value_json.spotify else 'disconnected' }}"
+
+    - name: HAJukeBox Spotify Account Tier
+      unique_id: hajukebox_spotify_account_tier
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.spotify.accountTier if value_json.spotify else 'unknown' }}"
+
+    - name: HAJukeBox Spotify Device
+      unique_id: hajukebox_spotify_device
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.spotify.deviceName if value_json.spotify and value_json.spotify.deviceName else 'Unavailable' }}"
+
+    - name: HAJukeBox Spotify Transfer Status
+      unique_id: hajukebox_spotify_transfer_status
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.spotify.transferStatus if value_json.spotify else 'idle' }}"
+
+    - name: HAJukeBox Spotify Last Error
+      unique_id: hajukebox_spotify_last_error
+      state_topic: jukebox/media/state
+      value_template: "{{ value_json.spotify.lastError if value_json.spotify and value_json.spotify.lastError else 'None' }}"
+
+    - name: HAJukeBox Last Event
+      unique_id: hajukebox_last_event
+      state_topic: jukebox/system/event
+      value_template: "{{ value_json.action ~ ': ' ~ value_json.meta }}"
+
+  binary_sensor:
+    - name: HAJukeBox Media Playing
+      unique_id: hajukebox_media_playing
+      state_topic: jukebox/media/state
+      value_template: "{{ 'ON' if value_json.isPlaying else 'OFF' }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+
+    - name: HAJukeBox Spotify Authenticated
+      unique_id: hajukebox_spotify_authenticated
+      state_topic: jukebox/media/state
+      value_template: "{{ 'ON' if value_json.spotify and value_json.spotify.authenticated else 'OFF' }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+
+    - name: HAJukeBox Spotify Active Device
+      unique_id: hajukebox_spotify_active_device
+      state_topic: jukebox/media/state
+      value_template: "{{ 'ON' if value_json.spotify and value_json.spotify.isActiveDevice else 'OFF' }}"
+      payload_on: "ON"
+      payload_off: "OFF"

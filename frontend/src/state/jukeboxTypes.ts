@@ -58,8 +58,15 @@ export type SpotifySdkStatus =
 
 export type SpotifyTransferStatus = "idle" | "pending" | "active" | "error";
 export type SpotifyAccountTier = "unknown" | "free" | "premium";
+export type SpotifyMockMode =
+  | "signed_out"
+  | "connected"
+  | "ready"
+  | "active"
+  | "error";
 
 export interface SpotifyState {
+  configured: boolean;
   authStatus: SpotifyAuthStatus;
   sdkStatus: SpotifySdkStatus;
   transferStatus: SpotifyTransferStatus;
@@ -72,6 +79,8 @@ export interface SpotifyState {
   positionMs: number;
   durationMs: number;
   scopes: string[];
+  expiresAt: string | null;
+  mockMode: SpotifyMockMode | null;
 }
 
 export interface PresenceState {
@@ -101,6 +110,37 @@ export interface EventLogItem {
   meta: string;
 }
 
+export interface VoiceAssistantState {
+  source: string;
+  command: string;
+  response: string;
+  updatedAt: string;
+}
+
+export type BackendRuntimeStatus =
+  | "ok"
+  | "degraded"
+  | "unavailable"
+  | "unknown";
+
+export type BackendDependencyStatus =
+  | "ready"
+  | "degraded"
+  | "unavailable"
+  | "disabled"
+  | "unknown";
+
+export interface BackendRuntimeState {
+  status: BackendRuntimeStatus;
+  service: string;
+  updatedAt: string | null;
+  mediaLibraryStatus: BackendDependencyStatus;
+  mediaLibraryReason: string | null;
+  haBridgeStatus: BackendDependencyStatus;
+  haBridgeReason: string | null;
+  lastSuccessfulPublishAt: string | null;
+}
+
 export interface AutomationLaneState {
   source: string;
   fusion: string;
@@ -113,10 +153,12 @@ export interface SystemHealthState {
   uptime: string;
   rssiDbm: string;
   brokerLatency: string;
+  backendRuntime: BackendRuntimeState;
 }
 
 export interface TelemetryState {
   presence: PresenceState;
+  voiceAssistant: VoiceAssistantState;
   distanceSeries: DistancePoint[];
   clapTrace: number[];
   mqttFeed: MqttFeedLine[];
@@ -150,7 +192,17 @@ export type JukeboxCommand =
   | { type: "set_spotify_connection"; connected: boolean }
   | { type: "set_dsp_profile"; profile: string }
   | { type: "spotify_authorize" }
+  | { type: "spotify_initialize" }
   | { type: "spotify_sdk_ready"; deviceId?: string; deviceName?: string }
+  | { type: "spotify_sdk_not_ready"; deviceId?: string }
+  | { type: "spotify_sdk_error"; message: string }
+  | {
+      type: "spotify_playback_state_changed";
+      currentTrack: JukeboxTrack | null;
+      positionMs: number;
+      durationMs: number;
+      isPlaying: boolean;
+    }
   | { type: "spotify_transfer_playback" }
   | { type: "spotify_disconnect" }
   | { type: "play_track"; trackId: number };

@@ -187,7 +187,7 @@ export default function MusicPanel({
             <span className="music-panel-subtitle">
               {panelSourceView === "local"
                 ? "Owned library and playlists"
-                : "Web Playback SDK sketch"}
+                : "Web Playback SDK"}
             </span>
           </div>
         </div>
@@ -320,7 +320,7 @@ export default function MusicPanel({
                     />
                     <div className="spotify-track-copy">
                       <span className="spotify-track-kicker">
-                        Spotify preview track
+                        Spotify playback
                       </span>
                       <strong>{spotify.currentTrack.title}</strong>
                       <span>
@@ -389,7 +389,10 @@ export default function MusicPanel({
               type="button"
               className={`spotify-action-button ${spotifyViewModel.primaryActionKind === "active" ? "is-static" : ""}`}
               onClick={handlePrimarySpotifyAction}
-              disabled={spotifyViewModel.primaryActionKind === "active"}
+              disabled={
+                spotifyViewModel.primaryActionKind === "active" ||
+                spotifyViewModel.primaryActionKind === "disabled"
+              }
             >
               {spotifyViewModel.primaryActionLabel}
             </button>

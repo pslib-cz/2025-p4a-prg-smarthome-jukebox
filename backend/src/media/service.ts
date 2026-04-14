@@ -4,6 +4,12 @@ import {
   getLibraryTracks,
   getMediaState,
 } from "./mockCatalog.js";
+import {
+  commandConflict,
+  mediaLibraryPathMissing,
+  trackNotFound,
+  trackStreamUnavailable,
+} from "./errors.js";
 import { scanMediaLibrary } from "./libraryScanner.js";
 import type {
   MediaCommand,
@@ -12,13 +18,60 @@ import type {
   MediaStateSnapshot,
   MediaTrack,
 } from "./types.js";
+import type {
+  BackendMediaLibraryHealthSnapshot,
+  RuntimeLogDomain,
+  RuntimeLogLevel,
+} from "../runtime/types.js";
 
 function cloneState<T>(value: T): T {
   return structuredClone(value);
 }
 
+function inferLogDomain(action: string): RuntimeLogDomain {
+  if (action.startsWith("media.")) {
+    return "media";
+  }
+
+  if (action.startsWith("library.")) {
+    return "library";
+  }
+
+  if (action.startsWith("haBridge.") || action.startsWith("bridge.")) {
+    return "haBridge";
+  }
+
+  return "system";
+}
+
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function parseDurationLabelToMs(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return 0;
+  }
+
+  const segments = trimmed.split(":").map((segment) => Number.parseInt(segment, 10));
+
+  if (
+    segments.length < 2 ||
+    segments.length > 3 ||
+    segments.some((segment) => !Number.isInteger(segment) || segment < 0)
+  ) {
+    return 0;
+  }
+
+  if (segments.length === 2) {
+    const [minutes, seconds] = segments;
+    return (minutes * 60 + seconds) * 1000;
+  }
+
+  const [hours, minutes, seconds] = segments;
+  return (hours * 3600 + minutes * 60 + seconds) * 1000;
 }
 
 function createFallbackTrack(title: string): MediaTrack {
@@ -35,6 +88,7 @@ function createFallbackTrack(title: string): MediaTrack {
 function createMediaStateFromTracks(tracks: MediaTrack[]): MediaStateSnapshot {
   const activeTrack =
     tracks[0] ?? createFallbackTrack("No local tracks found");
+  const durationMs = parseDurationLabelToMs(activeTrack.duration);
 
   return {
     source: "local",
@@ -43,7 +97,7 @@ function createMediaStateFromTracks(tracks: MediaTrack[]): MediaStateSnapshot {
     isPlaying: false,
     progressPercent: 0,
     positionMs: 0,
-    durationMs: 0,
+    durationMs,
     volumePercent: 72,
     activeTrackId: activeTrack.id,
     activeTrack,
@@ -53,6 +107,28 @@ function createMediaStateFromTracks(tracks: MediaTrack[]): MediaStateSnapshot {
       codec: tracks.length > 0 ? "MP3" : "None",
       bufferPercent: tracks.length > 0 ? 100 : 0,
       dspProfile: "Flat",
+    },
+    availability: {
+      overall: tracks.length > 0 ? "ready" : "idle",
+      library: {
+        status: tracks.length > 0 ? "ready" : "empty",
+        trackCount: tracks.length,
+        playlistCount: tracks.length > 0 ? 1 : 0,
+        pathConfigured: false,
+      },
+      player: {
+        status: tracks.length > 0 ? "ready" : "idle",
+        reason: tracks.length > 0 ? null : "No local tracks available.",
+      },
+    },
+    capabilities: {
+      play: tracks.length > 0,
+      pause: tracks.length > 0,
+      next: tracks.length > 0,
+      previous: tracks.length > 0,
+      seek: durationMs > 0,
+      setVolume: true,
+      playTrack: tracks.length > 0,
     },
   };
 }
@@ -129,6 +205,14 @@ export class InMemoryMediaService {
   private readonly trackFilePaths = new Map<number, string>();
   private nextLogId = 1;
   private readonly mediaLibraryPath: string | null;
+  private libraryHealthSnapshot: BackendMediaLibraryHealthSnapshot = {
+    status: "degraded",
+    reason: "Backend media library is not initialized.",
+    lastChangedAt: new Date().toISOString(),
+    pathConfigured: false,
+    trackCount: 0,
+    playlistCount: 0,
+  };
 
   constructor(mediaLibraryPath: string | null = null) {
     this.mediaLibraryPath = mediaLibraryPath;
@@ -142,11 +226,12 @@ export class InMemoryMediaService {
     this.tracks = cloneState(getLibraryTracks());
     this.playlists = cloneState(getLibraryPlaylists());
     this.state = cloneState(getMediaState());
+    this.refreshLibraryHealthSnapshot();
     this.log("library.mock", "Using bundled mock library.");
   }
 
   getState() {
-    return cloneState(this.state);
+    return cloneState(this.buildPublicState());
   }
 
   getTracks() {
@@ -161,11 +246,30 @@ export class InMemoryMediaService {
     return cloneState([...this.logs].reverse());
   }
 
+  getLatestLogEntry() {
+    return cloneState(this.logs.at(-1) ?? null);
+  }
+
+  getLibraryHealthSnapshot() {
+    return cloneState(this.libraryHealthSnapshot);
+  }
+
+  recordRuntimeEvent(
+    action: string,
+    message: string,
+    options: {
+      level?: RuntimeLogLevel;
+      domain?: RuntimeLogDomain;
+    } = {},
+  ) {
+    this.log(action, message, options);
+  }
+
   getTrackStreamPath(trackId: number) {
     const filePath = this.trackFilePaths.get(trackId);
 
     if (!filePath) {
-      throw new Error(`Track file is not available for track ${trackId}.`);
+      throw trackStreamUnavailable(trackId);
     }
 
     return filePath;
@@ -173,7 +277,7 @@ export class InMemoryMediaService {
 
   rescanLibrary() {
     if (!this.mediaLibraryPath) {
-      throw new Error("MEDIA_LIBRARY_PATH is not configured.");
+      throw mediaLibraryPathMissing();
     }
 
     this.loadLibrary(this.mediaLibraryPath);
@@ -191,6 +295,7 @@ export class InMemoryMediaService {
   applyCommand(command: MediaCommand) {
     switch (command.type) {
       case "play":
+        this.ensureQueueAvailable("Cannot play because the queue is empty.");
         this.state.isPlaying = true;
         this.log("media.play", `Playing ${this.state.activeTrack.title}`);
         return this.getState();
@@ -201,16 +306,24 @@ export class InMemoryMediaService {
         return this.getState();
 
       case "next":
+        this.ensureQueueAvailable("Cannot skip because the queue is empty.");
         this.cycleTrack("next");
         this.log("media.next", `Active track is now ${this.state.activeTrack.title}`);
         return this.getState();
 
       case "previous":
+        this.ensureQueueAvailable("Cannot go to the previous track because the queue is empty.");
         this.cycleTrack("previous");
         this.log("media.previous", `Active track is now ${this.state.activeTrack.title}`);
         return this.getState();
 
       case "seek":
+        if (this.state.durationMs <= 0) {
+          throw commandConflict(
+            "Cannot seek because the active track duration is unavailable.",
+          );
+        }
+
         this.state.progressPercent = clampPercent(command.progressPercent);
         this.state.positionMs = Math.round(
           (this.state.durationMs * this.state.progressPercent) / 100,
@@ -237,6 +350,7 @@ export class InMemoryMediaService {
     this.tracks = cloneState(scannedTracks);
     this.playlists = cloneState(createPlaylists(scannedTracks, mediaLibraryPath));
     this.state = cloneState(createMediaStateFromTracks(scannedTracks));
+    this.refreshLibraryHealthSnapshot();
     this.trackFilePaths.clear();
 
     for (const track of scannedTracks) {
@@ -249,12 +363,25 @@ export class InMemoryMediaService {
     }
   }
 
-  private log(action: string, meta: string) {
+  private log(
+    action: string,
+    message: string,
+    options: {
+      level?: RuntimeLogLevel;
+      domain?: RuntimeLogDomain;
+    } = {},
+  ) {
+    const level = options.level ?? "info";
+    const domain = options.domain ?? inferLogDomain(action);
+
     this.logs.push({
       id: this.nextLogId,
       time: new Date().toISOString(),
+      level,
+      domain,
       action,
-      meta,
+      message,
+      meta: message,
     });
 
     if (this.logs.length > 50) {
@@ -265,10 +392,6 @@ export class InMemoryMediaService {
   }
 
   private cycleTrack(direction: "next" | "previous") {
-    if (this.state.queue.length === 0) {
-      return;
-    }
-
     const activeIndex = this.state.queue.findIndex(
       (track) => track.id === this.state.activeTrackId,
     );
@@ -287,12 +410,92 @@ export class InMemoryMediaService {
       this.tracks.find((track) => track.id === trackId);
 
     if (!nextTrack) {
-      throw new Error(`Track not found: ${trackId}`);
+      throw trackNotFound(trackId);
     }
 
     this.state.activeTrackId = nextTrack.id;
     this.state.activeTrack = nextTrack;
     this.state.progressPercent = 0;
     this.state.positionMs = 0;
+    this.state.durationMs = parseDurationLabelToMs(nextTrack.duration);
+  }
+
+  private refreshLibraryHealthSnapshot() {
+    const publicState = this.buildPublicState();
+    const pathConfigured = publicState.availability.library.pathConfigured;
+    const trackCount = publicState.availability.library.trackCount;
+    const playlistCount = publicState.availability.library.playlistCount;
+
+    let status: BackendMediaLibraryHealthSnapshot["status"] = "ready";
+    let reason: string | null = null;
+
+    if (trackCount <= 0 && pathConfigured) {
+      status = "degraded";
+      reason = "Configured media library is empty.";
+    } else if (trackCount <= 0) {
+      status = "degraded";
+      reason = "No local media tracks are available.";
+    }
+
+    const nextSnapshot = {
+      status,
+      reason,
+      lastChangedAt: this.libraryHealthSnapshot.lastChangedAt,
+      pathConfigured,
+      trackCount,
+      playlistCount,
+    } satisfies BackendMediaLibraryHealthSnapshot;
+
+    if (
+      nextSnapshot.status !== this.libraryHealthSnapshot.status ||
+      nextSnapshot.reason !== this.libraryHealthSnapshot.reason ||
+      nextSnapshot.pathConfigured !== this.libraryHealthSnapshot.pathConfigured ||
+      nextSnapshot.trackCount !== this.libraryHealthSnapshot.trackCount ||
+      nextSnapshot.playlistCount !== this.libraryHealthSnapshot.playlistCount
+    ) {
+      nextSnapshot.lastChangedAt = new Date().toISOString();
+    }
+
+    this.libraryHealthSnapshot = nextSnapshot;
+  }
+
+  private ensureQueueAvailable(message: string) {
+    if (this.state.queue.length === 0) {
+      throw commandConflict(message);
+    }
+  }
+
+  private buildPublicState(): MediaStateSnapshot {
+    const queue = this.state.queue;
+    const hasTracks = queue.length > 0;
+    const playerStatus = hasTracks ? "ready" : "idle";
+    const playerReason = hasTracks ? null : "No local tracks available.";
+    const pathConfigured = this.mediaLibraryPath !== null;
+
+    return {
+      ...this.state,
+      availability: {
+        overall: hasTracks ? "ready" : "idle",
+        library: {
+          status: hasTracks ? "ready" : "empty",
+          trackCount: this.tracks.length,
+          playlistCount: this.playlists.length,
+          pathConfigured,
+        },
+        player: {
+          status: playerStatus,
+          reason: playerReason,
+        },
+      },
+      capabilities: {
+        play: hasTracks,
+        pause: hasTracks,
+        next: hasTracks,
+        previous: hasTracks,
+        seek: hasTracks && this.state.durationMs > 0,
+        setVolume: true,
+        playTrack: hasTracks,
+      },
+    };
   }
 }

@@ -1,6 +1,6 @@
 # HAJukeBox Progress Tracker
 
-Last updated: 2026-03-27
+Last updated: 2026-04-13
 
 Purpose
 
@@ -17,9 +17,9 @@ Status legend
 
 Current focus
 
-- Freeze the Home Assistant contract while keeping the new backend-backed local playback path stable
+- Freeze the `Home Assistant` entity and topic contract while keeping the backend-backed local playback path stable
 - Keep local MP3 as the baseline required media path
-- Preserve the current music-console visual identity while rewiring the data layer
+- Harden the backend media contract and browser playback sync before bonus work
 
 Done
 
@@ -66,28 +66,32 @@ Done
 - The frontend now lives in the top-level `frontend/` folder instead of `frontend/sketch/`.
 - The frontend now reads real backend media, library, and recent-log data over HTTP.
 - Local MP3 browser playback now works through the backend track stream endpoint and a frontend-managed audio element.
+- A real `Home Assistant` REST + WebSocket telemetry transport now exists behind frontend env configuration.
+- `Telemetry Deck` now shows the latest Google Assistant voice source and command from real HA helper entities.
 
 In progress
 
-- Define the exact Home Assistant entity and MQTT topic contract the frontend will expect.
-- Start separating purely decorative telemetry constants from baseline HA-driven telemetry data.
-- Decide how the first real telemetry adapter should expose freshness and reconnect timing into the shell state.
-- Replace the remaining mock `Home Assistant` transport with a real HA HTTP/WebSocket client.
-- Tighten browser playback sync so seek/progress reflect real audio position instead of state-only placeholders.
+- Freeze the exact `Home Assistant` entity and `MQTT` topic contract the frontend will expect.
+- Tighten browser playback sync so seek, progress, and playback lifecycle reflect real audio position instead of state-only placeholders.
+- Align frontend transport and mappers with the hardened backend media DTO and error contract.
 
 Next
 
 - Freeze a concrete HA entity list and MQTT topic list for the baseline local MP3 flow.
-- Bind the remote data source scaffold to real HA fetch/subscribe transport functions.
+- Finish backend media contract hardening:
+  availability fields
+  capability fields
+  structured error payloads
+- Validate the new real HA transport against a live HA instance with final entities and auth settings.
 - Reduce remaining static telemetry fallback data to only visual scaffolding markers and labels.
 - Add matching empty/offline placeholders inside `Telemetry Deck` panels once the HA telemetry contract is frozen.
+- Mirror backend media summary state into `Home Assistant` once the HA bridge shape is frozen.
 - Decide how the future real Spotify auth and SDK events will map onto the new Spotify sketch state.
 
 Later
 
 - Dynamic track source badge in the center area (`Spotify` vs `Local`).
 - Spotify source path and source switching.
-- Google Assistant feedback state.
 - Mode selector with larger described buttons.
 - Voice trigger entry.
 
@@ -108,7 +112,7 @@ Requirement tracking
 | 11  | P2       | Presence confidence gauge                | DONE    | Added to Telemetry Deck                                           |
 | 12  | P2       | Clap counter                             | DONE    | Dedicated daily clap count is visible in the Telemetry Deck       |
 | 13  | P3       | Mode selector with descriptions          | LATER   | Deferred on purpose                                               |
-| 14  | P3       | Voice trigger entry                      | LATER   | Deferred on purpose                                               |
+| 14  | P3       | Voice trigger entry                      | PARTIAL | HA voice feedback is visible; real Google cloud smoke still remains |
 
 Update rule
 

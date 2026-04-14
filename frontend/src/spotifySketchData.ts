@@ -19,6 +19,7 @@ export const SPOTIFY_SKETCH_TRACK: JukeboxTrack = {
 };
 
 export const INITIAL_SPOTIFY_STATE: SpotifyState = {
+  configured: true,
   authStatus: "disconnected",
   sdkStatus: "idle",
   transferStatus: "idle",
@@ -31,4 +32,6 @@ export const INITIAL_SPOTIFY_STATE: SpotifyState = {
   positionMs: 64200,
   durationMs: 215000,
   scopes: [...SPOTIFY_REQUIRED_SCOPES],
+  expiresAt: null,
+  mockMode: null,
 };

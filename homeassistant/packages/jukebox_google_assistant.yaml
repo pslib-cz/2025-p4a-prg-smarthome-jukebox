@@ -1,0 +1,142 @@
+input_button:
+  hajukebox_google_play_request:
+    name: HAJukeBox Google Play Music
+
+  hajukebox_google_pause_request:
+    name: HAJukeBox Google Pause Music
+
+  hajukebox_google_next_request:
+    name: HAJukeBox Google Next Track
+
+  hajukebox_google_previous_request:
+    name: HAJukeBox Google Previous Track
+
+input_text:
+  hajukebox_last_voice_source:
+    name: HAJukeBox Last Voice Source
+    max: 64
+
+  hajukebox_last_voice_command:
+    name: HAJukeBox Last Voice Command
+    max: 120
+
+  hajukebox_last_voice_response:
+    name: HAJukeBox Last Voice Response
+    max: 120
+
+automation:
+  - id: hajukebox_google_play_request
+    alias: HAJukeBox Google Assistant Play Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_play_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Play music"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Starting local playback"
+      - service: logbook.log
+        data:
+          name: "Google Assistant"
+          message: "Requested local playback"
+          entity_id: input_text.hajukebox_last_voice_command
+      - service: script.hajukebox_play
+
+  - id: hajukebox_google_pause_request
+    alias: HAJukeBox Google Assistant Pause Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_pause_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Pause music"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Pausing local playback"
+      - service: logbook.log
+        data:
+          name: "Google Assistant"
+          message: "Requested pause"
+          entity_id: input_text.hajukebox_last_voice_command
+      - service: script.hajukebox_pause
+
+  - id: hajukebox_google_next_request
+    alias: HAJukeBox Google Assistant Next Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_next_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Next track"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Skipping to the next track"
+      - service: logbook.log
+        data:
+          name: "Google Assistant"
+          message: "Requested next track"
+          entity_id: input_text.hajukebox_last_voice_command
+      - service: script.hajukebox_next
+
+  - id: hajukebox_google_previous_request
+    alias: HAJukeBox Google Assistant Previous Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_previous_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Previous track"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Returning to the previous track"
+      - service: logbook.log
+        data:
+          name: "Google Assistant"
+          message: "Requested previous track"
+          entity_id: input_text.hajukebox_last_voice_command
+      - service: script.hajukebox_previous

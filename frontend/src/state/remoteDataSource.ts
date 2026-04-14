@@ -24,10 +24,11 @@ function isUiOnlyCommand(command: JukeboxCommand) {
     command.type === "set_theme" ||
     command.type === "set_dsp_profile" ||
     command.type === "set_spotify_connection" ||
-    command.type === "spotify_authorize" ||
+    command.type === "spotify_initialize" ||
     command.type === "spotify_sdk_ready" ||
-    command.type === "spotify_transfer_playback" ||
-    command.type === "spotify_disconnect"
+    command.type === "spotify_sdk_not_ready" ||
+    command.type === "spotify_sdk_error" ||
+    command.type === "spotify_playback_state_changed"
   );
 }
 
@@ -81,6 +82,66 @@ export class RemoteJukeboxDataSource implements JukeboxDataSource {
   }
 
   async sendCommand(command: JukeboxCommand) {
+    if (command.type === "spotify_authorize") {
+      const previousState = this.currentState;
+      this.currentState = applyJukeboxCommand(this.currentState, command);
+      this.emit();
+
+      try {
+        await this.transports.backend.startSpotifyLogin();
+      } catch (error) {
+        this.currentState = previousState;
+        this.emit();
+        throw error;
+      }
+
+      return;
+    }
+
+    if (command.type === "spotify_transfer_playback") {
+      const deviceId = this.currentState.spotify.deviceId;
+      const deviceName = this.currentState.spotify.deviceName;
+
+      if (!deviceId) {
+        throw new Error("Spotify browser device is not ready.");
+      }
+
+      const previousState = this.currentState;
+      this.currentState = applyJukeboxCommand(this.currentState, command);
+      this.emit();
+
+      try {
+        await this.transports.backend.transferSpotifyPlayback({
+          deviceId,
+          deviceName,
+          play: true,
+        });
+        await this.refreshBackendSnapshot();
+      } catch (error) {
+        this.currentState = previousState;
+        this.emit();
+        throw error;
+      }
+
+      return;
+    }
+
+    if (command.type === "spotify_disconnect") {
+      const previousState = this.currentState;
+
+      try {
+        await this.transports.backend.disconnectSpotify();
+        this.currentState = applyJukeboxCommand(this.currentState, command);
+        await this.refreshBackendSnapshot();
+      } catch (error) {
+        this.currentState = previousState;
+        this.emit();
+        throw error;
+      }
+
+      return;
+    }
+
     if (isUiOnlyCommand(command)) {
       this.currentState = applyJukeboxCommand(this.currentState, command);
       this.emit();
@@ -136,6 +197,11 @@ export class RemoteJukeboxDataSource implements JukeboxDataSource {
       entityMap: this.transports.entityMap,
     });
     this.emit();
+  }
+
+  private async refreshBackendSnapshot() {
+    const backendSnapshot = await this.transports.backend.loadSnapshot();
+    this.applySnapshot({ backend: backendSnapshot });
   }
 
   private emit() {

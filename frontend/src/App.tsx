@@ -31,6 +31,7 @@ import {
 import { useJukebox } from "./state/useJukebox";
 import { buildAppShellStatusViewModel } from "./state/appShellStatus";
 import { useLocalAudioPlayback } from "./state/useLocalAudioPlayback";
+import { useSpotifyWebPlayback } from "./state/useSpotifyWebPlayback";
 
 const THEMES = ["casual", "disco", "focus", "eco"] as const;
 type Theme = (typeof THEMES)[number];
@@ -42,6 +43,10 @@ export default function App() {
   const { state, status, error, sendCommand } = useJukebox();
   const { audioRef } = useLocalAudioPlayback({
     media: state.media,
+    sendCommand,
+  });
+  useSpotifyWebPlayback({
+    spotify: state.spotify,
     sendCommand,
   });
   const appShellRef = useRef<HTMLDivElement | null>(null);
@@ -390,11 +395,7 @@ export default function App() {
               void sendCommand({ type: "spotify_authorize" });
             }}
             onSpotifyInitialize={() => {
-              void sendCommand({
-                type: "spotify_sdk_ready",
-                deviceId: "spotify-web-player-1",
-                deviceName: "HAJukeBox Web Player",
-              });
+              void sendCommand({ type: "spotify_initialize" });
             }}
             onSpotifyTransfer={() => {
               void sendCommand({ type: "spotify_transfer_playback" });

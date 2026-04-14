@@ -5,11 +5,18 @@ import App from "./App.tsx";
 import { JukeboxProvider } from "./state/JukeboxProvider.tsx";
 import { mockJukeboxState } from "./state/mockJukeboxState.ts";
 import { createBackendHttpTransport } from "./state/backendHttpTransport.ts";
+import {
+  createHomeAssistantTransport,
+  readHomeAssistantTransportConfig,
+} from "./state/homeAssistantTransport.ts";
 import { createMockHomeAssistantTransport } from "./state/mockHomeAssistantTransport.ts";
 import { RemoteJukeboxDataSource } from "./state/remoteDataSource.ts";
 
+const homeAssistantConfig = readHomeAssistantTransportConfig();
 const remoteDataSource = new RemoteJukeboxDataSource({
-  ha: createMockHomeAssistantTransport(),
+  ha: homeAssistantConfig
+    ? createHomeAssistantTransport(homeAssistantConfig)
+    : createMockHomeAssistantTransport(),
   backend: createBackendHttpTransport(),
 });
 

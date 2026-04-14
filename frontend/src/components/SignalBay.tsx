@@ -139,6 +139,15 @@ export default function SignalBay({
   activeDspProfile,
   appStatus,
 }: SignalBayProps) {
+  const backendRuntimeStatus = telemetry.system.backendRuntime.status;
+  const backendRuntimeMeta =
+    backendRuntimeStatus === "ok"
+      ? "Backend OK"
+      : backendRuntimeStatus === "degraded"
+        ? "Backend degraded"
+        : backendRuntimeStatus === "unavailable"
+          ? "Backend unavailable"
+          : "Backend unknown";
   const viewModel = buildSignalBayViewModel(telemetry, media);
   const recentEvents = telemetry.eventLog.slice(0, 4);
 
@@ -268,10 +277,10 @@ export default function SignalBay({
             <div className="bay-panel-head">
               <div>
                 <span className="bay-panel-kicker">System Health</span>
-                <h3 className="bay-panel-title">Broker and edge node</h3>
+                <h3 className="bay-panel-title">Backend, broker, and edge node</h3>
               </div>
               <span className="bay-panel-meta">
-                {telemetry.system.mqttStatus} / {telemetry.system.mqttSecurity}
+                {backendRuntimeMeta} / {telemetry.system.mqttStatus}
               </span>
             </div>
 
