@@ -7,14 +7,14 @@
 #define LED_BUILTIN 2
 #endif
 
-// ===== User setup =====
-const char* WIFI_SSID = "asus";
-const char* WIFI_PASSWORD = "123456789";
+// ===== User setup ===== -> musí se ručně přepisovat němělo by to být v repu
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
-const char* MQTT_HOST = "192.168.137.7";
+const char* MQTT_HOST = "192.168.1.100";
 const uint16_t MQTT_PORT = 1883;
-const char* MQTT_USER = "admin";
-const char* MQTT_PASSWORD = "1234";
+const char* MQTT_USER = "";
+const char* MQTT_PASSWORD = "";
 
 // Device and MQTT topics (aligned with project README/homeassistant contract)
 const char* DEVICE_ID = "esp32-jukebox-01";

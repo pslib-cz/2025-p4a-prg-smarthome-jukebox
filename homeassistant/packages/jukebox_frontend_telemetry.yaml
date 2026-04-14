@@ -107,7 +107,7 @@ template:
         attributes:
           security: >-
             {% if is_state('input_boolean.hajukebox_mqtt_connected_value', 'on') %}
-              Secured (TLS)
+              Connected
             {% else %}
               Not configured
             {% endif %}
