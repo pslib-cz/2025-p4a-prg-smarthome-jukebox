@@ -1,0 +1,113 @@
+input_number:
+  hajukebox_distance_cm_value:
+    name: HAJukeBox Distance Cm Value
+    min: 0
+    max: 1000
+    step: 1
+    mode: box
+    initial: 0
+
+  hajukebox_presence_confidence_value:
+    name: HAJukeBox Presence Confidence Value
+    min: 0
+    max: 100
+    step: 1
+    mode: slider
+    initial: 0
+
+  hajukebox_clap_count_today_value:
+    name: HAJukeBox Clap Count Today Value
+    min: 0
+    max: 999
+    step: 1
+    mode: box
+    initial: 0
+
+  hajukebox_esp32_rssi_value:
+    name: HAJukeBox ESP32 RSSI Value
+    min: -120
+    max: 0
+    step: 1
+    mode: slider
+    initial: -120
+
+  hajukebox_broker_latency_ms_value:
+    name: HAJukeBox Broker Latency Ms Value
+    min: 0
+    max: 2000
+    step: 1
+    mode: box
+    initial: 0
+
+input_text:
+  hajukebox_presence_reason_value:
+    name: HAJukeBox Presence Reason Value
+    max: 120
+    initial: "Unavailable"
+
+  hajukebox_uptime_value:
+    name: HAJukeBox Uptime Value
+    max: 64
+    initial: "Unavailable"
+
+input_boolean:
+  hajukebox_mqtt_connected_value:
+    name: HAJukeBox MQTT Connected Value
+    initial: false
+
+input_select:
+  hajukebox_mode:
+    name: HAJukeBox Mode
+    options:
+      - Unavailable
+      - Idle
+      - Focus armed
+      - Party
+      - Eco
+    initial: Unavailable
+
+template:
+  - sensor:
+      - name: HAJukeBox Distance Cm
+        unique_id: hajukebox_distance_cm
+        unit_of_measurement: cm
+        state: "{{ states('input_number.hajukebox_distance_cm_value') | int(0) }}"
+
+      - name: HAJukeBox Presence Confidence
+        unique_id: hajukebox_presence_confidence
+        unit_of_measurement: "%"
+        state: "{{ states('input_number.hajukebox_presence_confidence_value') | int(0) }}"
+
+      - name: HAJukeBox Presence Reason
+        unique_id: hajukebox_presence_reason
+        state: "{{ states('input_text.hajukebox_presence_reason_value') }}"
+
+      - name: HAJukeBox Clap Count Today
+        unique_id: hajukebox_clap_count_today
+        state: "{{ states('input_number.hajukebox_clap_count_today_value') | int(0) }}"
+
+      - name: HAJukeBox ESP32 RSSI
+        unique_id: hajukebox_esp32_rssi
+        unit_of_measurement: dBm
+        state: "{{ states('input_number.hajukebox_esp32_rssi_value') | int(-120) }}"
+
+      - name: HAJukeBox Broker Latency Ms
+        unique_id: hajukebox_broker_latency_ms
+        unit_of_measurement: ms
+        state: "{{ states('input_number.hajukebox_broker_latency_ms_value') | int(0) }}"
+
+      - name: HAJukeBox Uptime
+        unique_id: hajukebox_uptime
+        state: "{{ states('input_text.hajukebox_uptime_value') }}"
+
+  - binary_sensor:
+      - name: HAJukeBox MQTT Connected
+        unique_id: hajukebox_mqtt_connected
+        state: "{{ is_state('input_boolean.hajukebox_mqtt_connected_value', 'on') }}"
+        attributes:
+          security: >-
+            {% if is_state('input_boolean.hajukebox_mqtt_connected_value', 'on') %}
+              Secured (TLS)
+            {% else %}
+              Not configured
+            {% endif %}

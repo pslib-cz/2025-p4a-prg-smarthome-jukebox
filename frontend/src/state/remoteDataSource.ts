@@ -33,12 +33,16 @@ function isUiOnlyCommand(command: JukeboxCommand) {
 }
 
 export class RemoteJukeboxDataSource implements JukeboxDataSource {
-  private currentState = cloneState(mockJukeboxState);
+  private currentState: JukeboxAppState;
   private listeners = new Set<(state: JukeboxAppState) => void>();
   private readonly transports: RemoteJukeboxTransports;
 
-  constructor(transports: RemoteJukeboxTransports) {
+  constructor(
+    transports: RemoteJukeboxTransports,
+    initialState: JukeboxAppState = mockJukeboxState,
+  ) {
     this.transports = transports;
+    this.currentState = cloneState(initialState);
   }
 
   async getInitialState() {

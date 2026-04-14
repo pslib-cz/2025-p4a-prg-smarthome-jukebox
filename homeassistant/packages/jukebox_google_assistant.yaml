@@ -47,11 +47,6 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Starting local playback"
-      - service: logbook.log
-        data:
-          name: "Google Assistant"
-          message: "Requested local playback"
-          entity_id: input_text.hajukebox_last_voice_command
       - service: script.hajukebox_play
 
   - id: hajukebox_google_pause_request
@@ -76,11 +71,6 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Pausing local playback"
-      - service: logbook.log
-        data:
-          name: "Google Assistant"
-          message: "Requested pause"
-          entity_id: input_text.hajukebox_last_voice_command
       - service: script.hajukebox_pause
 
   - id: hajukebox_google_next_request
@@ -105,11 +95,6 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Skipping to the next track"
-      - service: logbook.log
-        data:
-          name: "Google Assistant"
-          message: "Requested next track"
-          entity_id: input_text.hajukebox_last_voice_command
       - service: script.hajukebox_next
 
   - id: hajukebox_google_previous_request
@@ -134,9 +119,4 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Returning to the previous track"
-      - service: logbook.log
-        data:
-          name: "Google Assistant"
-          message: "Requested previous track"
-          entity_id: input_text.hajukebox_last_voice_command
       - service: script.hajukebox_previous

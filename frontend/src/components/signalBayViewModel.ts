@@ -44,8 +44,6 @@ const CHART_WIDTH = 360;
 const CHART_HEIGHT = 180;
 const CHART_PADDING_X = 18;
 const CHART_PADDING_Y = 20;
-const DEFAULT_CLAP_TRACE = [18, 32, 46, 22, 38, 28, 56, 40];
-
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
@@ -404,8 +402,7 @@ export function buildSignalBayViewModel(
         value: `${telemetry.presence.clapCountToday}`,
       },
     ],
-    clapTrace:
-      telemetry.clapTrace.length > 0 ? telemetry.clapTrace : DEFAULT_CLAP_TRACE,
+    clapTrace: telemetry.clapTrace,
     mqttTopics: Array.from(
       new Set(telemetry.mqttFeed.map((entry) => entry.topic)),
     ).slice(0, 4),
