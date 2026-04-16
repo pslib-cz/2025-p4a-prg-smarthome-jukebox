@@ -13,6 +13,8 @@
   - uptime
   - health/status + system events
 - odběr mediálních příkazů z `jukebox/media/command`
+- odběr mediálního stavu z `jukebox/media/state`
+- experimentální přehrání `Local MP3` z backend streamu přes `I2S`
 - heartbeat LED (indikace běhu firmware)
 
 ## Arduino IDE setup
@@ -24,11 +26,13 @@
    - **Sketch -> Include Library -> Manage Libraries**
    - **PubSubClient**
    - **Adafruit NeoPixel**
+   - **ESP8266Audio**
 3. Otevři sketch:
    - `esp/smarthome_jukebox_esp/smarthome_jukebox_esp.ino`
 4. Doplň v horní části sketch:
    - `WIFI_SSID`, `WIFI_PASSWORD`
    - `MQTT_HOST`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASSWORD`
+   - `BACKEND_HOST`, `BACKEND_PORT`
 5. Nastav desku a port:
    - **Tools -> Board -> ESP32 Dev Module** (nebo konkrétní model)
    - **Tools -> Port -> COMx**
@@ -58,6 +62,35 @@ Takže stačí používat poslední verzi souboru `smarthome_jukebox_esp.ino`.
 
 Poznámka: clap detekce běží z analogové hodnoty mikrofonu na `D32` přes práh `MIC_CLAP_THRESHOLD`.
 
+## Rychlý pinout pro aktuální baseline
+
+Pokud chceš jen rychle zapojit aktuální funkční baseline, drž se tohoto:
+
+- `HC-SR04 VCC -> 5V/VIN`
+- `HC-SR04 GND -> GND`
+- `HC-SR04 TRIG -> GPIO5`
+- `HC-SR04 ECHO -> GPIO18` přes převod `5V -> 3.3V`
+- `MIC VCC -> 3.3V`
+- `MIC GND -> GND`
+- `MIC OUT -> GPIO32`
+- `WS2812 / NeoPixel 5V -> 5V`
+- `WS2812 / NeoPixel GND -> GND`
+- `WS2812 / NeoPixel DIN -> GPIO27` přes `330-500 Ohm`
+- stavová LED na desce: `LED_BUILTIN`, typicky `GPIO2` na běžném `ESP32 Dev Module`
+
+Piny pro audio výstup:
+
+- `GPIO22 -> I2S DIN`
+- `GPIO26 -> I2S BCLK`
+- `GPIO25 -> I2S LRC / WS`
+- `GPIO21 -> AMP SD / EN`
+
+Rychlá bezpečnostní pravidla:
+
+- všechny moduly musí mít společnou `GND`
+- `HC-SR04 ECHO` nikdy nevoď přímo do `ESP32`, pokud z něj leze `5V`
+- `WS2812` napájej z `5V`, ne z `3.3V`
+
 ## Doporučené fyzické zapojení
 
 Aktuální firmware opravdu používá:
@@ -67,7 +100,7 @@ Aktuální firmware opravdu používá:
 - stavovou LED na desce
 - `WS2812` / `NeoPixel` mode LED pásek nebo ring
 
-`I2S` piny jsou zatím jen rezervované pro budoucí audio výstup. Samotný sketch dnes nepřehrává zvuk do reproduktoru.
+`I2S` piny už může firmware použít i pro experimentální `Local MP3` přehrávání z backendu. Není to plnohodnotný player, ale MVP renderer pro školní demo.
 
 ### Bezpečné minimum
 
@@ -77,10 +110,10 @@ Aktuální firmware opravdu používá:
 | Ultrasonic `ECHO` | `GPIO18` | `HC-SR04 ECHO` | Vést přes dělič napětí nebo level shifter |
 | Mic analog | `GPIO32` | `MIC OUT` | Jen pokud modul dává max `3.3 V` |
 | Mode LED data | `GPIO27` | `WS2812 DIN` | Přes `330-500 Ohm` rezistor co nejblíž k první LED |
-| I2S data rezervace | `GPIO22` | `I2S DIN` | Zatím rezerva |
-| I2S bit clock rezerva | `GPIO26` | `I2S BCLK` | Zatím rezerva |
-| I2S word select rezerva | `GPIO25` | `I2S LRC/WS` | Zatím rezerva |
-| Audio enable rezervace | `GPIO21` | `AMP SD/EN` | Zatím rezerva, sketch ji drží v `HIGH` |
+| I2S data | `GPIO22` | `I2S DIN` | Aktivně použité pro audio stream |
+| I2S bit clock | `GPIO26` | `I2S BCLK` | Aktivně použité pro audio stream |
+| I2S word select | `GPIO25` | `I2S LRC/WS` | Aktivně použité pro audio stream |
+| Audio enable | `GPIO21` | `AMP SD/EN` | Firmware drží v `HIGH` |
 
 ### Napájení
 
@@ -113,7 +146,13 @@ Aktuální firmware opravdu používá:
    - `5V -> 5V`
    - `GND -> GND`
    - `DIN -> GPIO27` přes `330-500 Ohm`
-5. Budoucí `I2S` zesilovač nech až jako druhý krok po stabilním zprovoznění senzorů a MQTT.
+5. Pro audio variantu připoj `I2S` zesilovač:
+   - `DIN -> GPIO22`
+   - `BCLK -> GPIO26`
+   - `LRC / WS -> GPIO25`
+   - `SD / EN -> GPIO21`
+   - `VIN -> 5V`
+   - `GND -> GND`
 
 ## Wi-Fi a MQTT propojení s Docker runtime
 
@@ -139,6 +178,8 @@ Důležité:
    - `WIFI_PASSWORD`
    - `MQTT_HOST = "192.168.1.42"`
    - `MQTT_PORT = 1883`
+   - `BACKEND_HOST = "192.168.1.42"`
+   - `BACKEND_PORT = 3000`
 4. Pokud broker nepoužívá přihlášení, nech:
    - `MQTT_USER = ""`
    - `MQTT_PASSWORD = ""`
@@ -188,6 +229,7 @@ Poznámka:
 ## MQTT topics (subscribe)
 
 - `jukebox/media/command`
+- `jukebox/media/state`
 
 Firmware momentálně rozpoznává příkazy z JSON pole `type` (nebo kompatibilně `command`):
 
@@ -205,6 +247,82 @@ Doporučený (sjednocený) tvar payloadu je:
 - `{"type":"set_mode","mode":"focus"}`
 
 Pro kompatibilitu firmware akceptuje i `command` místo `type`.
+
+## Audio MVP přes jedno ESP32
+
+Firmware teď umí sledovat `jukebox/media/state` a podle něj zkusit rozjet audio renderer na jednom `ESP32`.
+
+Používá z payloadu hlavně:
+
+- `source`
+- `isPlaying`
+- `activeTrackId`
+- `volumePercent`
+
+Když platí:
+
+- `source == "local"`
+- `isPlaying == true`
+- `activeTrackId > 0`
+
+ESP otevře HTTP stream:
+
+`http://BACKEND_HOST:BACKEND_PORT/api/library/tracks/<trackId>/stream`
+
+a pošle dekódovaný `MP3` do `I2S` výstupu.
+
+### Co tato verze umí
+
+- `Local MP3` stream z backendu
+- změnu tracku podle backend stavu
+- hlasitost přes `volumePercent`
+- stop při `pause`
+- retry při chybě otevření streamu
+
+### Co tato verze neumí nebo jen omezeně
+
+- `Spotify` audio do `ESP32`
+- skutečný `seek`
+- skutečný `pause/resume` od stejné pozice
+- garantovaně stabilní běh `audio + ultrasonic + vše ostatní`
+
+Prakticky:
+
+- `pause` zastaví stream
+- další `play` znovu spustí aktuální track od začátku
+- po dohrání tracku renderer čeká na další změnu stavu z backendu
+- při aktivním audio streamu firmware dočasně nepublikuje `distance`, aby `pulseIn()` nedělal výpadky dekodéru
+
+### Doporučené audio zapojení
+
+Pro běžný `MAX98357A` nebo podobný `I2S` zesilovač:
+
+- `GPIO22 -> DIN`
+- `GPIO26 -> BCLK`
+- `GPIO25 -> LRC / WS`
+- `GPIO21 -> SD / EN`
+- `5V -> VIN`
+- `GND -> GND`
+
+Reproduktor připojuj na výstup zesilovače, ne přímo na `ESP32`.
+
+### Rychlý smoke test audio cesty
+
+1. Spusť Docker stack a ověř:
+   - backend na `3000`
+   - MQTT na `1883`
+2. Do firmware dej stejnou IP pro:
+   - `MQTT_HOST`
+   - `BACKEND_HOST`
+3. Nahraj firmware a otevři `Serial Monitor` na `115200`.
+4. Ve frontendu nebo přes `Home Assistant` spusť libovolný `Local MP3` track.
+5. Pro čistý test `ESP` výstupu zavři frontend tab nebo ztiš notebook, protože frontend zatím pořád umí tentýž `Local MP3` renderovat i v prohlížeči.
+6. V serialu sleduj:
+   - `Media state -> ...`
+   - `Audio stream started: http://...`
+7. Ověř zvuk na reproduktoru.
+
+Pokud vidíš opakovaně `audio_http_open_failed`, je špatně `BACKEND_HOST`, port `3000`, firewall nebo backend stream není dostupný.
 
 ### LED režimy (`set_mode`)
 

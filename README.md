@@ -136,7 +136,7 @@ Důležitá interpretace:
 - `backend/` už obsahuje i první `Home Assistant` MQTT mirror scaffold a bonusové `Spotify` auth/session endpointy
 - `frontend/` už čte reálná backend data přes HTTP, umí přehrávat lokální MP3 v prohlížeči přes backend stream a umí použít reálnou `Home Assistant` telemetrii přes `REST + WebSocket`
 - `homeassistant/` už obsahuje verzovaný config scaffold pro media bridge, frontend telemetry helpery a `Google Assistant` request entity
-- `esp/` už obsahuje baseline `ESP32` firmware pro `MQTT` telemetrii, odběr mediálních příkazů a mode LED signalizaci
+- `esp/` už obsahuje baseline `ESP32` firmware pro `MQTT` telemetrii, mode LED signalizaci a experimentální `Local MP3` render přes `I2S`
 - hlavní baseline blocker už není chybějící scaffolding, ale živé ověření a hardening celé cesty `ESP32 -> MQTT -> Home Assistant -> frontend` a `Home Assistant -> backend`
 
 ## Aktuální Docker Smoke Test

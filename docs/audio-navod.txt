@@ -1,0 +1,33 @@
+Uděláno. Přidal jsem první experimentální audio renderer na jednom ESP: ESP teď umí číst jukebox/media/state, vzít
+  local track z backend streamu a poslat ho přes I2S do zesilovače. Hlavní hooky jsou v esp/smarthome_jukebox_esp/
+  smarthome_jukebox_esp.ino a samotná audio pipeline v esp/smarthome_jukebox_esp/audio_player.ino. Dokumentaci jsem
+  srovnal v esp/README.md, plus stručně v README.md a docs/current-status.md.
+
+  ESP render tady znamená: ESP stáhne MP3 přes HTTP z backendu, samo ho dekóduje a pošle PCM přes I2S do zesilovače. Je
+  to náročnější než nechat audio v browseru, ale pro školní Local MP3 pokus na jednom ESP to dává smysl. Implementace
+  je postavená na ESP8266Audio: https://github.com/earlephilhower/ESP8266Audio
+
+  Důležité limity:
+
+  - Funguje jen Local MP3, ne Spotify.
+  - pause není skutečný pause; další play pustí aktuální track znovu od začátku.
+  - seek není podporovaný.
+  - Při aktivním audio streamu se dočasně vypíná distance polling, aby pulseIn() nerozbil dekodér.
+  - Frontend pořád umí stejné MP3 přehrávat v browseru, takže při testu ESP výstupu zavři tab nebo ztiš notebook, jinak
+    uslyšíš dva renderery.
+  - Firmware jsem nemohl zbuildit tady, protože v prostředí není arduino-cli ani platformio.
+
+  Co teď udělej:
+
+  1. V Arduino IDE doinstaluj ESP8266Audio.
+  2. Nastav BACKEND_HOST na stejnou IP jako MQTT_HOST a BACKEND_PORT = 3000.
+  3. Zapoj I2S zesilovač: DIN=22, BCLK=26, LRC/WS=25, SD/EN=21, 5V, GND.
+  4. Nahraj firmware.
+  5. Pusť Local MP3 a sleduj serial. Pokud uvidíš Audio stream started: http://..., cesta funguje. Pokud bude
+     audio_http_open_failed, je problém v IP, portu 3000, firewallu nebo backend streamu.
+
+  Jestli chceš, další krok udělám jeden z těchto:
+
+  - připravím frontend toggle, aby browser přestal renderovat audio při ESP režimu
+  - doplním backend/HA flow pro korektní posun na další track po dohrání na ESP
+  - sepíšu přesný upload/test checklist pro tvoji desku a zesilovač

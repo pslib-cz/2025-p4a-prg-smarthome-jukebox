@@ -18,7 +18,7 @@ const activeTrack = {
 };
 
 export const mockJukeboxState: JukeboxAppState = {
-  theme: "casual",
+  theme: "focus",
   connectionStatus: "connected",
   media: {
     source: "local",

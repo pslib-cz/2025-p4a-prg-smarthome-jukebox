@@ -86,6 +86,22 @@ export class RemoteJukeboxDataSource implements JukeboxDataSource {
   }
 
   async sendCommand(command: JukeboxCommand) {
+    if (command.type === "set_mode") {
+      const previousState = this.currentState;
+      this.currentState = applyJukeboxCommand(this.currentState, command);
+      this.emit();
+
+      try {
+        await this.transports.ha.sendModeCommand(command.mode);
+      } catch (error) {
+        this.currentState = previousState;
+        this.emit();
+        throw error;
+      }
+
+      return;
+    }
+
     if (command.type === "spotify_authorize") {
       const previousState = this.currentState;
       this.currentState = applyJukeboxCommand(this.currentState, command);

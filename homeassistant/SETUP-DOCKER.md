@@ -132,15 +132,27 @@ Before the first real smoke test, verify these points:
    - for `WSL2 + Docker Desktop`, use the Windows host LAN IP, not the internal WSL address
    - keep inbound `TCP 1883` open for the MQTT broker; `8123`, `3000`, and `5173` are useful for cross-device testing too
 
+7. `Ping` integration target
+   - before adding `Ping` in `Home Assistant`, verify the candidate IP responds from the HA container:
+
+```bash
+docker exec hajukebox-homeassistant ping -c 1 <candidate-ip>
+```
+
+   - in the local smoke test on `2026-04-15`, the container could ping `1.1.1.1` and `host.docker.internal`, but it could not reach the Windows Wi-Fi or hotspot IPs `10.7.3.71` and `192.168.137.1`
+   - do not assume a phone on the Windows hotspot will be reachable from `Home Assistant`
+   - prefer a stable always-on LAN device first, then move to a phone only after the direct ICMP smoke passes
+
 ## Suggested First Smoke
 
 After onboarding:
 
 1. Configure the `MQTT` integration in Home Assistant.
-2. Confirm the repo packages and scripts are loaded without config errors.
-3. Verify that `GET http://<backend-host>:3000/api/health` is reachable from the HA host.
-4. Trigger one HA media script and check that the backend receives the command.
-5. Open the frontend with `VITE_HA_BASE_URL` and `VITE_HA_TOKEN` set and confirm the first HA entities load.
+2. Verify one candidate `Ping` target responds from the `Home Assistant` container.
+3. Confirm the repo packages and scripts are loaded without config errors.
+4. Verify that `GET http://<backend-host>:3000/api/health` is reachable from the HA host.
+5. Trigger one HA media script and check that the backend receives the command.
+6. Open the frontend with `VITE_HA_BASE_URL` and `VITE_HA_TOKEN` set and confirm the first HA entities load.
 
 ## When To Use VirtualBox Instead
 

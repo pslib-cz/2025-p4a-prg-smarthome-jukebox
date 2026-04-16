@@ -23,7 +23,7 @@ type SpotifyDetailView = "player" | "tech";
 
 interface MusicPanelProps {
   theme: JukeboxTheme;
-  themeControl: {
+  modeControl: {
     icon: ReactNode;
     label: string;
   };
@@ -32,7 +32,7 @@ interface MusicPanelProps {
   activeSongId: number;
   spotify: SpotifyState;
   appStatus: AppShellStatusViewModel;
-  onToggleTheme: () => void;
+  onCycleMode: () => void;
   onSelectTrack: (trackId: number) => void;
   onSpotifyAuthorize: () => void;
   onSpotifyInitialize: () => void;
@@ -125,13 +125,13 @@ function getSpotifyTone(statusLabel: string) {
 
 export default function MusicPanel({
   theme,
-  themeControl,
+  modeControl,
   songs,
   playlists,
   activeSongId,
   spotify,
   appStatus,
-  onToggleTheme,
+  onCycleMode,
   onSelectTrack,
   onSpotifyAuthorize,
   onSpotifyInitialize,
@@ -192,9 +192,9 @@ export default function MusicPanel({
           </div>
         </div>
 
-        <button className="mode-toggle" onClick={onToggleTheme}>
-          <span className="mode-icon">{themeControl.icon}</span>
-          {themeControl.label}
+        <button className="mode-toggle" onClick={onCycleMode}>
+          <span className="mode-icon">{modeControl.icon}</span>
+          {modeControl.label}
         </button>
       </div>
 

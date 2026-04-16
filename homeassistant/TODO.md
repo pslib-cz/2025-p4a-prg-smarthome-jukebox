@@ -1,6 +1,6 @@
 # Home Assistant TODO
 
-Last reviewed: 2026-04-14
+Last reviewed: 2026-04-15
 
 Status legend:
 
@@ -15,14 +15,15 @@ Status legend:
 - [-] Freeze entity names before frontend and backend adapters are written
 - [-] Freeze MQTT topic names before ESP32 and HA packages are written
 - [x] Freeze how HA media scripts call the backend bridge
-- [ ] Freeze the second local HA integration needed for team-of-3 compliance
+- [x] Freeze the second local HA integration needed for team-of-3 compliance
+- [x] Choose the `Ping` target and freeze the final entity ID before presence fusion depends on it
 
 ## Phase 1: Base Setup
 
 - [x] Install and boot `Home Assistant`
 - [x] Create or reserve the final config structure inside this folder
 - [x] Install and configure the `MQTT` integration
-- [ ] Add the second local HA integration, recommended `Ping`
+- [x] Add the second local HA integration, recommended `Ping`
 - [-] Verify API access for frontend development
 - [ ] Remove `Music Assistant` if it was installed only for testing
 
@@ -37,7 +38,7 @@ Status legend:
 
 ## Phase 3: Helpers And Entity Model
 
-- [ ] Create `input_select.hajukebox_mode`
+- [x] Create `input_select.hajukebox_mode`
 - [x] Create `sensor.hajukebox_media_source`
 - [ ] Create presence confidence and reason entities
 - [ ] Create clap count helper or mirrored daily count
@@ -52,13 +53,13 @@ Status legend:
 - [x] Add `next` script that proxies the backend media path
 - [x] Add `previous` script that proxies the backend media path
 - [x] Add `set_volume` script that proxies the backend media path
-- [ ] Add `set_mode`
-- [-] Validate script calls from HA UI and automations into the backend bridge
+- [x] Add `set_mode`
+- [x] Validate script calls from HA UI and automations into the backend bridge
 
 ## Phase 5: Automations
 
-- [ ] Presence-triggered focus mode
-- [ ] Eco or off when presence is truly gone
+- [x] Presence-triggered focus mode
+- [x] Eco or off when presence is truly gone
 - [ ] Clap-triggered shortcut if still desired
 - [ ] Media-state event logging
 - [ ] Disconnect and recovery logging

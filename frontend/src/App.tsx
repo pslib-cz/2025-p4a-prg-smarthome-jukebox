@@ -32,9 +32,7 @@ import { useJukebox } from "./state/useJukebox";
 import { buildAppShellStatusViewModel } from "./state/appShellStatus";
 import { useLocalAudioPlayback } from "./state/useLocalAudioPlayback";
 import { useSpotifyWebPlayback } from "./state/useSpotifyWebPlayback";
-
-const THEMES = ["casual", "disco", "focus", "eco"] as const;
-type Theme = (typeof THEMES)[number];
+import { nextMode, normalizeModeLabel } from "./state/modeState";
 
 const DEFAULT_DSP_PROFILE: DspProfileKey = "Vocal Clarity";
 const INITIAL_DSP_VALUES = DSP_PRESETS[DEFAULT_DSP_PROFILE];
@@ -80,22 +78,21 @@ export default function App() {
     ? state.media.audio.dspProfile
     : DEFAULT_DSP_PROFILE;
   const appStatus = buildAppShellStatusViewModel(state, status, error);
+  const currentMode = normalizeModeLabel(state.telemetry.presence.lastMode);
 
   const spinDuration = spinSpeed === 0 ? 0 : 12 - (spinSpeed / 100) * 10.8;
 
-  const toggleTheme = useCallback(() => {
-    const idx = THEMES.indexOf(theme);
-    const nextTheme = THEMES[(idx + 1) % THEMES.length];
-    void sendCommand({ type: "set_theme", theme: nextTheme });
-  }, [sendCommand, theme]);
-
-  const THEME_CONFIG: Record<Theme, { icon: React.ReactNode; label: string }> =
+  const MODE_CONFIG: Record<"idle" | "focus" | "party" | "eco", { icon: React.ReactNode; label: string }> =
     {
-      casual: { icon: <CasualIcon />, label: "Casual" },
-      disco: { icon: <DiscoBallIcon />, label: "Disco" },
+      idle: { icon: <CasualIcon />, label: "Idle" },
       focus: { icon: <FocusIcon />, label: "Focus" },
+      party: { icon: <DiscoBallIcon />, label: "Party" },
       eco: { icon: <EcoIcon />, label: "Eco" },
     };
+
+  const cycleMode = useCallback(() => {
+    void sendCommand({ type: "set_mode", mode: nextMode(currentMode) });
+  }, [currentMode, sendCommand]);
 
   const togglePlay = useCallback(() => {
     void sendCommand({ type: isPlaying ? "pause" : "play" });
@@ -378,13 +375,13 @@ export default function App() {
 
           <MusicPanel
             theme={theme}
-            themeControl={THEME_CONFIG[theme]}
+            modeControl={MODE_CONFIG[currentMode]}
             songs={state.library.songs}
             playlists={state.library.playlists}
             activeSongId={activeSongId}
             spotify={spotify}
             appStatus={appStatus}
-            onToggleTheme={toggleTheme}
+            onCycleMode={cycleMode}
             onSelectTrack={(trackId) => {
               void sendCommand({
                 type: "play_track",

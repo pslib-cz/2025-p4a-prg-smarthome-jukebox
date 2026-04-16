@@ -68,6 +68,10 @@ function buildMockEntityStates(): HomeAssistantEntityState[] {
 
 export function createMockHomeAssistantTransport(): HomeAssistantTelemetryTransport {
   return {
+    async sendModeCommand() {
+      return undefined;
+    },
+
     async loadSnapshot(): Promise<HomeAssistantTelemetrySnapshot> {
       return {
         connectionStatus: "connected",

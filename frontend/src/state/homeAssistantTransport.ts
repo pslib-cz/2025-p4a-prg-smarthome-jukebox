@@ -5,6 +5,7 @@ import type {
   HomeAssistantTelemetryTransport,
 } from "./remoteContracts";
 import { DEFAULT_HA_ENTITY_MAP } from "./remoteContracts";
+import type { JukeboxMode } from "./jukeboxTypes";
 import type { EventLogItem } from "./jukeboxTypes";
 
 const DEFAULT_LOGBOOK_HOURS = 6;
@@ -321,6 +322,27 @@ export function createHomeAssistantTransport(
   config: HomeAssistantTransportConfig,
 ): HomeAssistantTelemetryTransport {
   return {
+    async sendModeCommand(mode: JukeboxMode) {
+      const response = await fetch(
+        new URL(
+          "/api/services/script/hajukebox_set_mode",
+          `${config.baseUrl}/`,
+        ).toString(),
+        {
+          method: "POST",
+          headers: createAuthHeaders(config.token),
+          body: JSON.stringify({ mode }),
+        },
+      );
+
+      if (!response.ok) {
+        const message = await readHomeAssistantError(response);
+        throw new Error(
+          message ?? `Home Assistant mode command failed: ${response.status}`,
+        );
+      }
+    },
+
     async loadSnapshot() {
       const [entities, eventLog] = await Promise.all([
         loadTrackedStates(config),

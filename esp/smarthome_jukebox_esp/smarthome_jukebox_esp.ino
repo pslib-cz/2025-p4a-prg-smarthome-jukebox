@@ -7,14 +7,16 @@
 #define LED_BUILTIN 2
 #endif
 
-// ===== User setup ===== -> musí se ručně přepisovat němělo by to být v repu
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+// ===== User setup ===== -> prozatimní udaje
+const char* WIFI_SSID = "asus";
+const char* WIFI_PASSWORD = "123456789";
 
-const char* MQTT_HOST = "192.168.1.100";
+const char* MQTT_HOST = "192.168.137.1";
 const uint16_t MQTT_PORT = 1883;
-const char* MQTT_USER = "";
-const char* MQTT_PASSWORD = "";
+const char* MQTT_USER = "admin";
+const char* MQTT_PASSWORD = "1234";
+const char* BACKEND_HOST = MQTT_HOST;
+const uint16_t BACKEND_PORT = 3000;
 
 // Device and MQTT topics (aligned with project README/homeassistant contract)
 const char* DEVICE_ID = "esp32-jukebox-01";
@@ -27,6 +29,7 @@ const char* TOPIC_HEALTH = "jukebox/device/health";
 const char* TOPIC_SYSTEM_HEALTH = "jukebox/device/system_health";
 const char* TOPIC_SYSTEM_EVENT = "jukebox/system/event";
 const char* TOPIC_MEDIA_COMMAND = "jukebox/media/command";
+const char* TOPIC_MEDIA_STATE = "jukebox/media/state";
 
 // Pin map from your hardware wiring
 const int PIN_LED_STATUS = LED_BUILTIN;
@@ -61,6 +64,11 @@ unsigned long clapCount = 0;
 String currentMode = "idle";
 uint16_t partyHueOffset = 0;
 float focusPulsePhase = 0.0f;
+
+void setupAudioPlayback();
+void loopAudioPlayback();
+void handleMediaState(const String& payload);
+bool isAudioPlaybackActive();
 
 uint32_t modeColor(const String& mode) {
   if (mode == "focus") {
@@ -222,6 +230,34 @@ int extractJsonInt(const String& json, const char* key, int fallback) {
   return json.substring(start, end).toInt();
 }
 
+bool extractJsonBool(const String& json, const char* key, bool fallback) {
+  String keyToken = "\"" + String(key) + "\"";
+  int keyPos = json.indexOf(keyToken);
+  if (keyPos < 0) {
+    return fallback;
+  }
+
+  int colonPos = json.indexOf(':', keyPos + keyToken.length());
+  if (colonPos < 0) {
+    return fallback;
+  }
+
+  int start = colonPos + 1;
+  while (start < static_cast<int>(json.length()) &&
+         (json[start] == ' ' || json[start] == '\t')) {
+    start++;
+  }
+
+  if (json.startsWith("true", start)) {
+    return true;
+  }
+  if (json.startsWith("false", start)) {
+    return false;
+  }
+
+  return fallback;
+}
+
 void connectWifi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -242,8 +278,10 @@ void publishPeriodicTelemetry() {
 
   if (now - lastDistancePublishMs >= 1000) {
     lastDistancePublishMs = now;
-    long distanceCm = readDistanceCm();
-    publishJsonValue(TOPIC_DISTANCE, String(distanceCm), false);
+    if (!isAudioPlaybackActive()) {
+      long distanceCm = readDistanceCm();
+      publishJsonValue(TOPIC_DISTANCE, String(distanceCm), false);
+    }
   }
 
   if (now - lastMicPublishMs >= 250) {
@@ -343,6 +381,8 @@ void mqttCallback(char* topic, byte* message, unsigned int length) {
 
   if (topicString == TOPIC_MEDIA_COMMAND) {
     handleMediaCommand(payload);
+  } else if (topicString == TOPIC_MEDIA_STATE) {
+    handleMediaState(payload);
   }
 }
 
@@ -363,6 +403,7 @@ void connectMqtt() {
     if (connected) {
       Serial.println("connected");
       mqttClient.subscribe(TOPIC_MEDIA_COMMAND);
+      mqttClient.subscribe(TOPIC_MEDIA_STATE);
       publishJsonText(TOPIC_HEALTH, "status", "online", true);
       publishJsonText(TOPIC_SYSTEM_HEALTH, "status", "online", true);
       publishEvent("mqtt_connected");
@@ -405,6 +446,7 @@ void setup() {
   Serial.print("  LED_DATA=");
   Serial.println(PIN_MODE_LED_DATA);
 
+  setupAudioPlayback();
   connectWifi();
   connectMqtt();
   applyMode("idle");
@@ -420,6 +462,7 @@ void loop() {
   }
 
   mqttClient.loop();
+  loopAudioPlayback();
   publishPeriodicTelemetry();
   animateModeLeds();
 

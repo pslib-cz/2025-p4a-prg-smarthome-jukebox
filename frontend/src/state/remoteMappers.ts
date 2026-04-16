@@ -24,6 +24,7 @@ import {
   type HomeAssistantEntityState,
   type HomeAssistantTelemetrySnapshot,
 } from "./remoteContracts";
+import { modeLabelToTheme } from "./modeState";
 
 const MAX_DISTANCE_POINTS = 8;
 const MAX_CLAP_TRACE_POINTS = 16;
@@ -760,6 +761,7 @@ export function buildJukeboxStateFromRemoteSnapshots(
   return {
     ...previousState,
     connectionStatus: nextConnectionStatus,
+    theme: modeLabelToTheme(nextTelemetry.presence.lastMode),
     media: {
       ...nextMedia,
       spotifyConnected: nextSpotify.authStatus === "connected",

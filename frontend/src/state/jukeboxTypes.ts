@@ -1,4 +1,5 @@
 export type JukeboxTheme = "casual" | "disco" | "focus" | "eco";
+export type JukeboxMode = "idle" | "focus" | "party" | "eco";
 export type MediaSource = "local" | "spotify";
 export type ConnectionStatus =
   | "idle"
@@ -188,6 +189,7 @@ export type JukeboxCommand =
   | { type: "previous" }
   | { type: "seek"; progressPercent: number }
   | { type: "set_volume"; volumePercent: number }
+  | { type: "set_mode"; mode: JukeboxMode }
   | { type: "set_theme"; theme: JukeboxTheme }
   | { type: "set_spotify_connection"; connected: boolean }
   | { type: "set_dsp_profile"; profile: string }

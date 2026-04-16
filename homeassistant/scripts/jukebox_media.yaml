@@ -67,3 +67,36 @@ hajukebox_set_volume:
       data:
         payload: >-
           {"type":"set_volume","volumePercent":{{ volume_percent | int(0) }}}
+
+hajukebox_set_mode:
+  alias: HAJukeBox Set Mode
+  mode: restart
+  fields:
+    mode:
+      name: Mode
+      required: true
+      selector:
+        select:
+          options:
+            - idle
+            - focus
+            - party
+            - eco
+  sequence:
+    - variables:
+        requested_mode: "{{ mode | default('idle') | string | lower | trim }}"
+        ha_option: >-
+          {% if requested_mode in ['focus', 'focus armed'] %}
+            Focus armed
+          {% elif requested_mode == 'party' %}
+            Party
+          {% elif requested_mode == 'eco' %}
+            Eco
+          {% else %}
+            Idle
+          {% endif %}
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.hajukebox_mode
+      data:
+        option: "{{ ha_option | trim }}"

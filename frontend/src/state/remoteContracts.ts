@@ -4,6 +4,7 @@ import type {
   ConnectionStatus,
   EventLogItem,
   JukeboxCommand,
+  JukeboxMode,
   JukeboxPlaylist,
   JukeboxTheme,
   JukeboxTrack,
@@ -244,6 +245,7 @@ export interface BackendSnapshot {
 
 export interface HomeAssistantTelemetryTransport {
   loadSnapshot(): Promise<HomeAssistantTelemetrySnapshot>;
+  sendModeCommand(mode: JukeboxMode): Promise<void>;
   subscribe?(
     onSnapshot: (snapshot: HomeAssistantTelemetrySnapshot) => void,
   ): (() => void) | Promise<() => void>;

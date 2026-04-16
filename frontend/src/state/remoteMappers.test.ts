@@ -353,6 +353,20 @@ describe("buildJukeboxStateFromRemoteSnapshots", () => {
     ]);
   });
 
+  it("aligns the frontend theme with the HA mode entity", () => {
+    const nextState = buildJukeboxStateFromRemoteSnapshots(mockJukeboxState, {
+      ha: {
+        connectionStatus: "connected",
+        entities: [
+          { entity_id: "input_select.hajukebox_mode", state: "Eco" },
+        ],
+      },
+    });
+
+    expect(nextState.telemetry.presence.lastMode).toBe("Eco");
+    expect(nextState.theme).toBe("eco");
+  });
+
   it("marks the combined system as connecting when only one side is ready", () => {
     expect(deriveConnectionStatus("connected", "connecting")).toBe("connecting");
   });

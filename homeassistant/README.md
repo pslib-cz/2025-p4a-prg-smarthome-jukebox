@@ -150,6 +150,34 @@ Recommended baseline integrations:
 - `Logbook`
 - one additional local integration for assignment compliance, recommended `Ping`
 
+## Ping Integration Guidance
+
+`Ping` is the recommended second local `Home Assistant` integration, but the target choice matters more than the integration itself.
+
+Use this order of preference:
+
+- a stable LAN device such as the router, access point, or another always-on computer
+- a phone on the same regular Wi-Fi only after a direct ICMP smoke test succeeds from the `Home Assistant` container
+- avoid a phone connected through a Windows hotspot as the first target in `WSL2 + Docker Desktop`
+
+Reason:
+
+- the official HA Ping documentation notes that modern phones often put Wi-Fi to sleep when idle, so `Ping` alone is not reliable enough as the only presence signal
+- in the local smoke test on `2026-04-15`, the `Home Assistant` container could ping `1.1.1.1` and `host.docker.internal`, but it could not reach the Windows Wi-Fi or hotspot IPs `10.7.3.71` and `192.168.137.1`
+
+Recommended naming if the team later decides to use a phone as the tracked target:
+
+- `binary_sensor.hajukebox_phone_ping`
+- optional `device_tracker.hajukebox_phone`
+
+Freeze the final entity ID before wiring `Ping` into presence fusion, dashboards, or frontend contracts.
+
+Current runtime choice in the shared Docker stack:
+
+- HA `Ping` integration target: `192.168.137.47`
+- HA-generated runtime entity: `binary_sensor.192_168_137_47`
+- project-owned stable mirror entity: `binary_sensor.hajukebox_ping_target_connected`
+
 Recommended optional integrations later:
 
 - `ESPHome` if the final firmware path uses it
@@ -180,6 +208,7 @@ Use stable names early so frontend, backend, and HA automations do not drift.
 - `sensor.hajukebox_broker_latency_ms`
 - `sensor.hajukebox_uptime`
 - `binary_sensor.hajukebox_mqtt_connected`
+- `binary_sensor.hajukebox_ping_target_connected`
 
 ### Mode and control helpers
 
@@ -215,16 +244,14 @@ Currently implemented in `scripts/jukebox_media.yaml`:
 - `script.hajukebox_previous`
 - `script.hajukebox_seek`
 - `script.hajukebox_set_volume`
-
-Still planned for the baseline:
-
 - `script.hajukebox_set_mode`
 
 ### Baseline automations
 
 - presence update from MQTT and device state
-- focus-mode activation from proximity rules
-- eco shutdown when presence is truly gone
+- mode selection mirror from `input_select.hajukebox_mode` into `jukebox/media/command`
+- focus-mode activation from fused presence confidence
+- eco fallback when presence is truly gone
 - event logging for every visible automation action
 - backend or player disconnect detection
 

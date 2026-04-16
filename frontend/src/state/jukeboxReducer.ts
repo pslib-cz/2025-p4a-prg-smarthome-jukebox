@@ -3,6 +3,7 @@ import type {
   JukeboxCommand,
   JukeboxTrack,
 } from "./jukeboxTypes";
+import { modeToHaLabel, modeToTheme } from "./modeState";
 
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -104,6 +105,19 @@ export function applyJukeboxCommand(
         media: {
           ...state.media,
           volumePercent: clampPercent(command.volumePercent),
+        },
+      };
+
+    case "set_mode":
+      return {
+        ...state,
+        theme: modeToTheme(command.mode),
+        telemetry: {
+          ...state.telemetry,
+          presence: {
+            ...state.telemetry.presence,
+            lastMode: modeToHaLabel(command.mode),
+          },
         },
       };
 

@@ -1,6 +1,6 @@
 # HAJukeBox: Co Máme A Co Zbývá
 
-Last updated: 2026-04-14
+Last updated: 2026-04-16
 
 ## Zdroje
 
@@ -24,7 +24,7 @@ Projekt už má hotový použitelný baseline skeleton:
 - frontend umí číst reálná backend data a přehrávat lokální MP3 v prohlížeči
 - frontend umí číst reálnou `Home Assistant` telemetrii přes `REST + WebSocket`
 - `homeassistant/` obsahuje verzovaný bridge scaffold pro media summary mirror, telemetry helpery a Google Assistant request entity
-- `esp/` obsahuje baseline firmware pro `ESP32` telemetrii a mode LED
+- `esp/` obsahuje baseline firmware pro `ESP32` telemetrii, mode LED a první experimentální `Local MP3` audio render přes `I2S`
 - `Telemetry Deck` pokrývá prakticky všechny prioritní `P0` a většinu `P1/P2` prvků
 - `Spotify` je implementované jako bonusová vrstva
 

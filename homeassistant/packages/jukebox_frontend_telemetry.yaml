@@ -112,40 +112,54 @@ template:
               Not configured
             {% endif %}
 
-automation:
-  - id: hajukebox_esp32_distance_telemetry
-    alias: HAJukeBox ESP32 Distance Telemetry
+      - name: HAJukeBox Ping Target Connected
+        unique_id: hajukebox_ping_target_connected
+        device_class: connectivity
+        state: "{{ is_state('binary_sensor.192_168_137_47', 'on') }}"
+        attributes:
+          source_entity_id: binary_sensor.192_168_137_47
+
+script:
+  hajukebox_refresh_presence_fusion:
+    alias: HAJukeBox Refresh Presence Fusion
     mode: restart
-    trigger:
-      - platform: mqtt
-        topic: jukebox/sensors/distance
-    variables:
-      distance_cm: "{{ trigger.payload_json.value | int(-1) }}"
-      clamped_distance_cm: "{{ [distance_cm, 0] | max }}"
-      presence_confidence: >-
-        {% if distance_cm >= 0 and distance_cm <= 120 %}
-          90
-        {% elif distance_cm > 120 and distance_cm <= 250 %}
-          45
-        {% else %}
-          0
-        {% endif %}
-      presence_reason: >-
-        {% if distance_cm == -1 %}
-          No echo from ultrasonic sensor
-        {% elif distance_cm <= 120 %}
-          Distance sensor detected nearby presence
-        {% elif distance_cm <= 250 %}
-          Distance sensor detected movement in range
-        {% else %}
-          No nearby distance presence
-        {% endif %}
-    action:
-      - service: input_number.set_value
-        target:
-          entity_id: input_number.hajukebox_distance_cm_value
-        data:
-          value: "{{ clamped_distance_cm }}"
+    sequence:
+      - variables:
+          ping_online: "{{ is_state('binary_sensor.hajukebox_ping_target_connected', 'on') }}"
+          mqtt_online: "{{ is_state('input_boolean.hajukebox_mqtt_connected_value', 'on') }}"
+          distance_cm: "{{ states('input_number.hajukebox_distance_cm_value') | int(0) }}"
+          nearby_distance: "{{ distance_cm > 0 and distance_cm <= 120 }}"
+          room_distance: "{{ distance_cm > 120 and distance_cm <= 250 }}"
+          presence_confidence: >-
+            {% if ping_online and nearby_distance %}
+              100
+            {% elif ping_online and room_distance %}
+              78
+            {% elif ping_online %}
+              60
+            {% elif nearby_distance %}
+              90
+            {% elif room_distance %}
+              45
+            {% else %}
+              0
+            {% endif %}
+          presence_reason: >-
+            {% if ping_online and nearby_distance %}
+              Ping target reachable and distance sensor confirms nearby presence
+            {% elif ping_online and room_distance %}
+              Ping target reachable and distance sensor sees movement in range
+            {% elif ping_online %}
+              Ping target reachable
+            {% elif nearby_distance %}
+              Distance sensor detected nearby presence
+            {% elif room_distance %}
+              Distance sensor detected movement in range
+            {% elif mqtt_online %}
+              No nearby distance presence
+            {% else %}
+              Ping target unreachable and ESP32 offline
+            {% endif %}
       - service: input_number.set_value
         target:
           entity_id: input_number.hajukebox_presence_confidence_value
@@ -156,6 +170,24 @@ automation:
           entity_id: input_text.hajukebox_presence_reason_value
         data:
           value: "{{ presence_reason }}"
+
+automation:
+  - id: hajukebox_esp32_distance_telemetry
+    alias: HAJukeBox ESP32 Distance Telemetry
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/sensors/distance
+    variables:
+      distance_cm: "{{ trigger.payload_json.value | int(-1) }}"
+      clamped_distance_cm: "{{ [distance_cm, 0] | max }}"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.hajukebox_distance_cm_value
+        data:
+          value: "{{ clamped_distance_cm }}"
+      - service: script.hajukebox_refresh_presence_fusion
 
   - id: hajukebox_esp32_clap_telemetry
     alias: HAJukeBox ESP32 Clap Telemetry
@@ -195,6 +227,7 @@ automation:
       - service: input_boolean.turn_on
         target:
           entity_id: input_boolean.hajukebox_mqtt_connected_value
+      - service: script.hajukebox_refresh_presence_fusion
 
   - id: hajukebox_esp32_uptime_telemetry
     alias: HAJukeBox ESP32 Uptime Telemetry
@@ -240,30 +273,100 @@ automation:
               - service: input_boolean.turn_on
                 target:
                   entity_id: input_boolean.hajukebox_mqtt_connected_value
-              - service: input_text.set_value
-                target:
-                  entity_id: input_text.hajukebox_presence_reason_value
-                data:
-                  value: "ESP32 online via MQTT"
+              - service: script.hajukebox_refresh_presence_fusion
         default:
           - service: input_boolean.turn_off
             target:
               entity_id: input_boolean.hajukebox_mqtt_connected_value
-          - service: input_number.set_value
-            target:
-              entity_id: input_number.hajukebox_presence_confidence_value
-            data:
-              value: 0
-          - service: input_text.set_value
-            target:
-              entity_id: input_text.hajukebox_presence_reason_value
-            data:
-              value: "ESP32 offline"
           - service: input_select.select_option
             target:
               entity_id: input_select.hajukebox_mode
             data:
               option: Unavailable
+          - service: script.hajukebox_refresh_presence_fusion
+
+  - id: hajukebox_ping_target_presence
+    alias: HAJukeBox Ping Target Presence
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.hajukebox_ping_target_connected
+    action:
+      - service: script.hajukebox_refresh_presence_fusion
+
+  - id: hajukebox_mode_selection_publish
+    alias: HAJukeBox Mode Selection Publish
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: input_select.hajukebox_mode
+    variables:
+      selected_option: "{{ trigger.to_state.state if trigger.to_state else 'Unavailable' }}"
+      normalized_mode: >-
+        {% set selected = selected_option | lower %}
+        {% if selected == 'focus armed' %}
+          focus
+        {% elif selected == 'party' %}
+          party
+        {% elif selected == 'eco' %}
+          eco
+        {% elif selected == 'idle' %}
+          idle
+        {% else %}
+          unavailable
+        {% endif %}
+    condition:
+      - condition: template
+        value_template: "{{ normalized_mode != 'unavailable' }}"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: jukebox/media/command
+          retain: false
+          payload: >-
+            {"type":"set_mode","mode":"{{ normalized_mode }}"}
+
+  - id: hajukebox_presence_auto_focus_mode
+    alias: HAJukeBox Presence Auto Focus Mode
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.hajukebox_presence_confidence
+        above: 74
+        for:
+          seconds: 10
+    condition:
+      - condition: state
+        entity_id: input_boolean.hajukebox_mqtt_connected_value
+        state: "on"
+      - condition: template
+        value_template: >-
+          {{ states('input_select.hajukebox_mode') in ['Idle', 'Eco', 'Unavailable'] }}
+    action:
+      - service: script.hajukebox_set_mode
+        data:
+          mode: focus
+
+  - id: hajukebox_presence_auto_eco_mode
+    alias: HAJukeBox Presence Auto Eco Mode
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.hajukebox_presence_confidence
+        below: 1
+        for:
+          seconds: 30
+    condition:
+      - condition: state
+        entity_id: input_boolean.hajukebox_mqtt_connected_value
+        state: "on"
+      - condition: template
+        value_template: >-
+          {{ states('input_select.hajukebox_mode') not in ['Eco', 'Party', 'Unavailable'] }}
+    action:
+      - service: script.hajukebox_set_mode
+        data:
+          mode: eco
 
   - id: hajukebox_esp32_mode_events
     alias: HAJukeBox ESP32 Mode Events

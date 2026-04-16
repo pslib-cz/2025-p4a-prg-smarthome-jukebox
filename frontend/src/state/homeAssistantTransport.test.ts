@@ -159,6 +159,44 @@ describe("homeAssistantTransport", () => {
     expect(snapshot.automationLanes).toEqual([]);
   });
 
+  it("sends mode changes to the HA set_mode script", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify([{ result: "ok" }]), { status: 200 }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createHomeAssistantTransport(BASE_CONFIG).sendModeCommand("focus");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:8123/api/services/script/hajukebox_set_mode",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-token",
+        }),
+        body: JSON.stringify({ mode: "focus" }),
+      }),
+    );
+  });
+
+  it("surfaces structured HA errors when a mode change fails", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          message: "Mode automation is unavailable.",
+        }),
+        { status: 503 },
+      ),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      createHomeAssistantTransport(BASE_CONFIG).sendModeCommand("party"),
+    ).rejects.toThrow("Mode automation is unavailable.");
+  });
+
   it("authenticates the HA websocket and emits tracked state updates", async () => {
     vi.stubGlobal("WebSocket", FakeWebSocket as unknown as typeof WebSocket);
 
