@@ -1,6 +1,6 @@
 # Home Assistant TODO
 
-Last reviewed: 2026-04-15
+Last reviewed: 2026-04-18
 
 Status legend:
 
@@ -83,7 +83,8 @@ Status legend:
 ## Phase 7: Bonus Paths
 
 - [x] Add Google Assistant-ready request entities, automations, and voice feedback helpers
-- [ ] Link a real Google Home / Google Assistant project and run one manual smoke
+- [x] Document the Home Assistant Cloud and manual Google Assistant linking paths
+- [x] Link a real Google Home / Google Assistant cloud path and run one manual smoke
 - [x] Mirror Spotify source state into HA
 - [ ] Add Spotify-triggered scripts only after the browser playback path exists
 

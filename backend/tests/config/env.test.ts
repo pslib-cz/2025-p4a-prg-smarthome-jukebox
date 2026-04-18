@@ -23,10 +23,10 @@ describe("buildConfig", () => {
         frontendRedirectUri: null,
         scopes: [
           "streaming",
-          "user-read-email",
           "user-read-private",
           "user-read-playback-state",
           "user-modify-playback-state",
+          "playlist-read-private",
         ],
         mockMode: null,
       },
@@ -48,7 +48,7 @@ describe("buildConfig", () => {
           "http://127.0.0.1:3000/auth/spotify/callback",
         HAJUKEBOX_SPOTIFY_FRONTEND_REDIRECT_URI:
           "http://127.0.0.1:5173/spotify/return",
-        HAJUKEBOX_SPOTIFY_SCOPES: "streaming,user-read-email",
+        HAJUKEBOX_SPOTIFY_SCOPES: "streaming,playlist-read-private",
         HAJUKEBOX_SPOTIFY_MOCK_MODE: "active",
       }),
     ).toEqual({
@@ -66,7 +66,7 @@ describe("buildConfig", () => {
         clientId: "spotify-client-id",
         redirectUri: "http://127.0.0.1:3000/auth/spotify/callback",
         frontendRedirectUri: "http://127.0.0.1:5173/spotify/return",
-        scopes: ["streaming", "user-read-email"],
+        scopes: ["streaming", "playlist-read-private"],
         mockMode: "active",
       },
     });
@@ -100,10 +100,10 @@ describe("buildConfig", () => {
       spotify: {
         scopes: [
           "streaming",
-          "user-read-email",
           "user-read-private",
           "user-read-playback-state",
           "user-modify-playback-state",
+          "playlist-read-private",
         ],
         mockMode: null,
       },

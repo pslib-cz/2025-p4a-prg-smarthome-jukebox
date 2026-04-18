@@ -2,6 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildTrackStreamUrl,
   createBackendHttpTransport,
+  fetchSpotifyPlaylistItems,
+  fetchSpotifyPlaylists,
+  searchSpotifyTracks,
+  startSpotifyPlayback,
 } from "./backendHttpTransport";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -208,6 +212,83 @@ describe("backendHttpTransport", () => {
     await expect(
       createBackendHttpTransport().sendCommand({ type: "next" }),
     ).rejects.toThrow("Cannot skip because the queue is empty.");
+  });
+
+  it("builds spotify catalog search requests against the backend", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          items: [],
+          total: 0,
+          limit: 8,
+          offset: 0,
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await searchSpotifyTracks("satellite", 8, 0);
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/spotify/search?query=satellite&limit=8&offset=0", undefined);
+  });
+
+  it("loads spotify playlists and playlist items through the backend proxy", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [],
+            total: 0,
+            limit: 8,
+            offset: 0,
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [],
+            total: 0,
+            limit: 20,
+            offset: 0,
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchSpotifyPlaylists(8, 0);
+    await fetchSpotifyPlaylistItems("spotify-playlist-1", 20, 0);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/spotify/playlists?limit=8&offset=0",
+      undefined,
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/spotify/playlists/spotify-playlist-1/items?limit=20&offset=0",
+      undefined,
+    );
+  });
+
+  it("posts spotify playback payloads to the backend", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await startSpotifyPlayback({
+      deviceId: "spotify-web-player-1",
+      uris: ["spotify:track:track-1"],
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/spotify/play",
+      expect.objectContaining({
+        method: "POST",
+      }),
+    );
   });
 
   it("builds a stable local track stream url", () => {

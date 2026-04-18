@@ -3,8 +3,16 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { SpotifyConfig } from "../config/env.js";
 import { createSpotifyHealthSnapshot } from "./config.js";
 import {
+  normalizeSpotifyPlaylistItems,
+  normalizeSpotifyPlaylists,
+  normalizeSpotifySearchTracks,
+  type SpotifyCatalogPlaylistSummary,
+  type SpotifyCatalogTrackSummary,
+} from "./catalog.js";
+import {
   isSpotifyApiError,
   spotifyDeviceMissing,
+  spotifyInvalidRequest,
   spotifyInvalidState,
   spotifyMissingCode,
   spotifyNotAuthenticated,
@@ -12,13 +20,17 @@ import {
   spotifyPremiumRequired,
   spotifyUpstreamError,
 } from "./errors.js";
+import { fetchSpotifyWithBackoff } from "./http.js";
 import type {
   SpotifyAccountTier,
+  SpotifyCatalogPlaylistPage,
+  SpotifyCatalogTrackPage,
   SpotifyDisconnectResponse,
   SpotifyMockMode,
   SpotifyPlaybackStateSummary,
   SpotifyPlaybackTrackPayload,
   SpotifySdkStatus,
+  SpotifyStartPlaybackRequestBody,
   SpotifyService,
   SpotifySessionSummary,
   SpotifyTokenPayload,
@@ -40,6 +52,50 @@ const MOCK_TRACK: SpotifyPlaybackTrackPayload = {
   durationMs: 215_000,
   coverUrl: "/covers/midnight-groove.png",
 };
+const MOCK_SPOTIFY_TRACKS: SpotifyCatalogTrackSummary[] = [
+  {
+    id: "mock-track-901",
+    uri: "spotify:track:mock-track-901",
+    title: "Satellite Hearts",
+    artist: "Signal Arcade",
+    album: "Browser Playback",
+    durationMs: 215_000,
+    coverUrl: "/covers/midnight-groove.png",
+    externalUrl: "https://open.spotify.com/track/mock-track-901",
+  },
+  {
+    id: "mock-track-902",
+    uri: "spotify:track:mock-track-902",
+    title: "Neon Arrival",
+    artist: "Signal Arcade",
+    album: "Browser Playback",
+    durationMs: 198_000,
+    coverUrl: "/covers/midnight-groove.png",
+    externalUrl: "https://open.spotify.com/track/mock-track-902",
+  },
+  {
+    id: "mock-track-903",
+    uri: "spotify:track:mock-track-903",
+    title: "Quiet Focus",
+    artist: "Morning Static",
+    album: "Study Lines",
+    durationMs: 246_000,
+    coverUrl: "/covers/midnight-groove.png",
+    externalUrl: "https://open.spotify.com/track/mock-track-903",
+  },
+];
+const MOCK_SPOTIFY_PLAYLISTS: SpotifyCatalogPlaylistSummary[] = [
+  {
+    id: "mock-playlist-focus",
+    uri: "spotify:playlist:mock-playlist-focus",
+    name: "Focus Rotation",
+    description: "Mock playlist for browser playback validation.",
+    ownerName: "HAJukeBox",
+    imageUrl: "/covers/midnight-groove.png",
+    trackCount: 3,
+    externalUrl: "https://open.spotify.com/playlist/mock-playlist-focus",
+  },
+];
 const DEFAULT_SPOTIFY_CONFIG: SpotifyConfig = {
   clientId: null,
   redirectUri: null,
@@ -309,6 +365,119 @@ function buildAuthorizeUrl(config: SpotifyConfig, state: string, codeVerifier: s
   return `${SPOTIFY_AUTHORIZE_URL}?${params.toString()}`;
 }
 
+function sanitizePageLimit(value: number | undefined, fallback: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.min(50, Math.floor(value)));
+}
+
+function sanitizePageOffset(value: number | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor(value));
+}
+
+function buildSpotifyPageUrl(
+  path: string,
+  query: Record<string, string | number | undefined>,
+) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value === "undefined") {
+      continue;
+    }
+
+    params.set(key, String(value));
+  }
+
+  return `${SPOTIFY_API_BASE_URL}${path}?${params.toString()}`;
+}
+
+function getMockTrackPage(
+  tracks: SpotifyCatalogTrackSummary[],
+  limit: number,
+  offset: number,
+): SpotifyCatalogTrackPage {
+  return {
+    items: tracks.slice(offset, offset + limit),
+    total: tracks.length,
+    limit,
+    offset,
+  };
+}
+
+function getMockPlaylistPage(
+  playlists: SpotifyCatalogPlaylistSummary[],
+  limit: number,
+  offset: number,
+): SpotifyCatalogPlaylistPage {
+  return {
+    items: playlists.slice(offset, offset + limit),
+    total: playlists.length,
+    limit,
+    offset,
+  };
+}
+
+function normalizePlaybackRequest(
+  payload: SpotifyStartPlaybackRequestBody,
+): SpotifyStartPlaybackRequestBody {
+  const deviceId = payload.deviceId?.trim();
+  const contextUri = payload.contextUri?.trim();
+  const uris =
+    payload.uris
+      ?.map((uri) => uri.trim())
+      .filter((uri) => uri.length > 0) ?? [];
+  const offsetPosition = payload.offset?.position;
+  const offsetUri = payload.offset?.uri?.trim();
+
+  if (!contextUri && uris.length === 0) {
+    throw spotifyInvalidRequest(
+      "Spotify playback requires a context URI or at least one track URI.",
+    );
+  }
+
+  if (contextUri && uris.length > 0) {
+    throw spotifyInvalidRequest(
+      "Spotify playback accepts either contextUri or uris, not both at the same time.",
+    );
+  }
+
+  if (
+    typeof offsetPosition === "number" &&
+    (!Number.isInteger(offsetPosition) || offsetPosition < 0)
+  ) {
+    throw spotifyInvalidRequest("Spotify playback offset.position must be a non-negative integer.");
+  }
+
+  if (
+    typeof payload.positionMs === "number" &&
+    (!Number.isFinite(payload.positionMs) || payload.positionMs < 0)
+  ) {
+    throw spotifyInvalidRequest("Spotify playback positionMs must be a non-negative number.");
+  }
+
+  return {
+    deviceId: deviceId || undefined,
+    contextUri: contextUri || undefined,
+    uris: uris.length > 0 ? uris : undefined,
+    offset:
+      typeof offsetPosition === "number" || offsetUri
+        ? {
+            ...(typeof offsetPosition === "number" ? { position: offsetPosition } : {}),
+            ...(offsetUri ? { uri: offsetUri } : {}),
+          }
+        : undefined,
+    positionMs:
+      typeof payload.positionMs === "number" ? Math.floor(payload.positionMs) : undefined,
+  };
+}
+
 function createMockSessionSummary(
   healthConfigured: boolean,
   mockMode: SpotifyMockMode,
@@ -332,7 +501,12 @@ function createMockSessionSummary(
         authStatus: "error",
         accountTier: "premium",
         expiresAt: null,
-        scopes: ["streaming", "user-read-playback-state", "user-modify-playback-state"],
+        scopes: [
+          "streaming",
+          "user-read-playback-state",
+          "user-modify-playback-state",
+          "playlist-read-private",
+        ],
         lastError: "Synthetic Spotify mock error.",
         mockMode,
       };
@@ -343,7 +517,12 @@ function createMockSessionSummary(
         authStatus: "connected",
         accountTier: "premium",
         expiresAt: null,
-        scopes: ["streaming", "user-read-playback-state", "user-modify-playback-state"],
+        scopes: [
+          "streaming",
+          "user-read-playback-state",
+          "user-modify-playback-state",
+          "playlist-read-private",
+        ],
         lastError: null,
         mockMode,
       };
@@ -545,7 +724,7 @@ class InMemorySpotifyService implements SpotifyService {
     return {
       configured: true,
       authenticated: true,
-      authStatus: session.lastError ? "error" : "connected",
+      authStatus: "connected",
       accountTier: session.accountTier,
       expiresAt: toIsoOrNull(session.expiresAt),
       scopes: [...session.scopes],
@@ -652,24 +831,28 @@ class InMemorySpotifyService implements SpotifyService {
       session.browserDeviceId &&
         (browserDevice?.is_active || playback.device?.id === session.browserDeviceId),
     );
+    const knownBrowserDeviceId =
+      browserDevice?.id ??
+      (isActiveDevice ? playback.device?.id ?? null : null);
     const currentTrack = this.normalizeTrack(playback.item);
     const transferStatus: SpotifyPlaybackStateSummary["transferStatus"] =
       isActiveDevice
         ? "active"
-        : session.browserDeviceId
+        : knownBrowserDeviceId
           ? "pending"
           : "idle";
+    const deviceName =
+      browserDevice?.name ||
+      (isActiveDevice ? playback.device?.name : undefined) ||
+      session.browserDeviceName ||
+      null;
 
     return {
       authenticated: true,
       sdkStatus: null,
       transferStatus,
-      deviceId: session.browserDeviceId ?? playback.device?.id ?? null,
-      deviceName:
-        session.browserDeviceName ??
-        browserDevice?.name ??
-        playback.device?.name ??
-        null,
+      deviceId: knownBrowserDeviceId,
+      deviceName,
       isActiveDevice,
       isPlaying: Boolean(playback.is_playing),
       positionMs:
@@ -679,6 +862,187 @@ class InMemorySpotifyService implements SpotifyService {
       lastError: session.lastError,
       mockMode: null,
     };
+  }
+
+  async searchTracks(
+    request: FastifyRequest,
+    query: {
+      query: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<SpotifyCatalogTrackPage> {
+    const limit = sanitizePageLimit(query.limit, 8);
+    const offset = sanitizePageOffset(query.offset);
+    const searchQuery = query.query.trim();
+
+    if (!searchQuery) {
+      throw spotifyInvalidRequest("Spotify search query is required.");
+    }
+
+    if (this.mockMode) {
+      const matches = MOCK_SPOTIFY_TRACKS.filter((track) => {
+        const haystack = `${track.title} ${track.artist} ${track.album}`.toLowerCase();
+        return haystack.includes(searchQuery.toLowerCase());
+      });
+
+      return getMockTrackPage(matches, limit, offset);
+    }
+
+    const session = this.getAuthenticatedSession(request);
+    const payload = await this.authorizedFetch(
+      buildSpotifyPageUrl("/search", {
+        q: searchQuery,
+        type: "track",
+        limit,
+        offset,
+      }),
+      session,
+      undefined,
+      true,
+    );
+
+    return normalizeSpotifySearchTracks(payload ?? {});
+  }
+
+  async getCurrentUserPlaylists(
+    request: FastifyRequest,
+    query: {
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<SpotifyCatalogPlaylistPage> {
+    const limit = sanitizePageLimit(query.limit, 8);
+    const offset = sanitizePageOffset(query.offset);
+
+    if (this.mockMode) {
+      return getMockPlaylistPage(MOCK_SPOTIFY_PLAYLISTS, limit, offset);
+    }
+
+    const session = this.getAuthenticatedSession(request);
+    const payload = await this.authorizedFetch(
+      buildSpotifyPageUrl("/me/playlists", {
+        limit,
+        offset,
+      }),
+      session,
+      undefined,
+      true,
+    );
+
+    return normalizeSpotifyPlaylists(payload ?? {});
+  }
+
+  async getPlaylistItems(
+    request: FastifyRequest,
+    playlistId: string,
+    query: {
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<SpotifyCatalogTrackPage> {
+    const normalizedPlaylistId = playlistId.trim();
+    const limit = sanitizePageLimit(query.limit, 20);
+    const offset = sanitizePageOffset(query.offset);
+
+    if (!normalizedPlaylistId) {
+      throw spotifyInvalidRequest("Spotify playlist id is required.");
+    }
+
+    if (this.mockMode) {
+      return getMockTrackPage(MOCK_SPOTIFY_TRACKS, limit, offset);
+    }
+
+    const session = this.getAuthenticatedSession(request);
+    const payload = await this.authorizedFetch(
+      buildSpotifyPageUrl(
+        `/playlists/${encodeURIComponent(normalizedPlaylistId)}/items`,
+        {
+          limit,
+          offset,
+        },
+      ),
+      session,
+      undefined,
+      true,
+    );
+
+    return normalizeSpotifyPlaylistItems(payload ?? {});
+  }
+
+  async startPlayback(
+    request: FastifyRequest,
+    payload: SpotifyStartPlaybackRequestBody,
+  ): Promise<SpotifyPlaybackStateSummary> {
+    const normalizedPayload = normalizePlaybackRequest(payload);
+
+    if (this.mockMode) {
+      return {
+        ...createMockPlaybackState("active"),
+        deviceId: normalizedPayload.deviceId ?? MOCK_BROWSER_DEVICE_ID,
+        currentTrack: {
+          ...MOCK_TRACK,
+          id: MOCK_SPOTIFY_TRACKS[0].id,
+          title: MOCK_SPOTIFY_TRACKS[0].title,
+          artist: MOCK_SPOTIFY_TRACKS[0].artist,
+          album: MOCK_SPOTIFY_TRACKS[0].album,
+          durationMs: MOCK_SPOTIFY_TRACKS[0].durationMs,
+          coverUrl: MOCK_SPOTIFY_TRACKS[0].coverUrl,
+        },
+      };
+    }
+
+    const session = this.getAuthenticatedSession(request);
+    this.ensurePremiumAccount(session);
+
+    if (normalizedPayload.deviceId) {
+      session.browserDeviceId = normalizedPayload.deviceId;
+      await this.authorizedFetch(`${SPOTIFY_API_BASE_URL}/me/player`, session, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          device_ids: [normalizedPayload.deviceId],
+          play: true,
+        }),
+      });
+    }
+
+    const query = new URLSearchParams();
+
+    if (normalizedPayload.deviceId) {
+      query.set("device_id", normalizedPayload.deviceId);
+    }
+
+    const endpoint = query.size > 0
+      ? `${SPOTIFY_API_BASE_URL}/me/player/play?${query.toString()}`
+      : `${SPOTIFY_API_BASE_URL}/me/player/play`;
+
+    await this.authorizedFetch(
+      endpoint,
+      session,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...(normalizedPayload.contextUri
+            ? { context_uri: normalizedPayload.contextUri }
+            : {}),
+          ...(normalizedPayload.uris ? { uris: normalizedPayload.uris } : {}),
+          ...(normalizedPayload.offset ? { offset: normalizedPayload.offset } : {}),
+          ...(typeof normalizedPayload.positionMs === "number"
+            ? { position_ms: normalizedPayload.positionMs }
+            : {}),
+        }),
+      },
+      true,
+    );
+
+    session.lastError = null;
+    return this.getPlaybackState(request);
   }
 
   async transferPlayback(
@@ -812,7 +1176,7 @@ class InMemorySpotifyService implements SpotifyService {
       redirect_uri: this.config.redirectUri!,
       code_verifier: codeVerifier,
     });
-    const response = await fetch(SPOTIFY_TOKEN_URL, {
+    const response = await fetchSpotifyWithBackoff(SPOTIFY_TOKEN_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -851,7 +1215,7 @@ class InMemorySpotifyService implements SpotifyService {
       grant_type: "refresh_token",
       refresh_token: session.refreshToken,
     });
-    const response = await fetch(SPOTIFY_TOKEN_URL, {
+    const response = await fetchSpotifyWithBackoff(SPOTIFY_TOKEN_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -951,7 +1315,7 @@ class InMemorySpotifyService implements SpotifyService {
   ): Promise<Record<string, unknown> | string | null> {
     try {
       const accessToken = await this.ensureAccessToken(session);
-      const response = await fetch(input, {
+      const response = await fetchSpotifyWithBackoff(input, {
         ...init,
         headers: {
           ...(init.headers ?? {}),

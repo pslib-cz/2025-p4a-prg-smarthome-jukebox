@@ -11,6 +11,18 @@ input_button:
   hajukebox_google_previous_request:
     name: HAJukeBox Google Previous Track
 
+  hajukebox_google_focus_mode_request:
+    name: HAJukeBox Google Focus Mode
+
+  hajukebox_google_party_mode_request:
+    name: HAJukeBox Google Party Mode
+
+  hajukebox_google_eco_mode_request:
+    name: HAJukeBox Google Eco Mode
+
+  hajukebox_google_idle_mode_request:
+    name: HAJukeBox Google Idle Mode
+
 input_text:
   hajukebox_last_voice_source:
     name: HAJukeBox Last Voice Source
@@ -47,6 +59,10 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Starting local playback"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested local playback"
       - service: script.hajukebox_play
 
   - id: hajukebox_google_pause_request
@@ -71,6 +87,10 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Pausing local playback"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested pause"
       - service: script.hajukebox_pause
 
   - id: hajukebox_google_next_request
@@ -95,6 +115,10 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Skipping to the next track"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested next track"
       - service: script.hajukebox_next
 
   - id: hajukebox_google_previous_request
@@ -119,4 +143,132 @@ automation:
           entity_id: input_text.hajukebox_last_voice_response
         data:
           value: "Returning to the previous track"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested previous track"
       - service: script.hajukebox_previous
+
+  - id: hajukebox_google_focus_mode_request
+    alias: HAJukeBox Google Assistant Focus Mode Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_focus_mode_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Set mode to focus"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Switching HAJukeBox to focus mode"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested focus mode"
+      - service: script.hajukebox_set_mode
+        data:
+          mode: focus
+          source: google_assistant
+
+  - id: hajukebox_google_party_mode_request
+    alias: HAJukeBox Google Assistant Party Mode Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_party_mode_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Set mode to party"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Switching HAJukeBox to party mode"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested party mode"
+      - service: script.hajukebox_set_mode
+        data:
+          mode: party
+          source: google_assistant
+
+  - id: hajukebox_google_eco_mode_request
+    alias: HAJukeBox Google Assistant Eco Mode Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_eco_mode_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Set mode to eco"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Switching HAJukeBox to eco mode"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested eco mode"
+      - service: script.hajukebox_set_mode
+        data:
+          mode: eco
+          source: google_assistant
+
+  - id: hajukebox_google_idle_mode_request
+    alias: HAJukeBox Google Assistant Idle Mode Request
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_button.hajukebox_google_idle_mode_request
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_source
+        data:
+          value: "Google Assistant"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_command
+        data:
+          value: "Set mode to idle"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_last_voice_response
+        data:
+          value: "Switching HAJukeBox to idle mode"
+      - service: logbook.log
+        data:
+          name: HAJukeBox Google Assistant
+          message: "Requested idle mode"
+      - service: script.hajukebox_set_mode
+        data:
+          mode: idle
+          source: google_assistant

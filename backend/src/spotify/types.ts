@@ -1,5 +1,16 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { BackendSpotifyHealthSnapshot } from "../runtime/types.js";
+import type {
+  SpotifyCatalogPlaylistPage,
+  SpotifyCatalogTrackPage,
+} from "./catalog.js";
+
+export type {
+  SpotifyCatalogPlaylistPage,
+  SpotifyCatalogPlaylistSummary,
+  SpotifyCatalogTrackPage,
+  SpotifyCatalogTrackSummary,
+} from "./catalog.js";
 
 export type SpotifyAuthStatus =
   | "disconnected"
@@ -70,6 +81,19 @@ export interface SpotifyTransferRequestBody {
   play?: boolean;
 }
 
+export interface SpotifyPlaybackOffset {
+  position?: number;
+  uri?: string;
+}
+
+export interface SpotifyStartPlaybackRequestBody {
+  deviceId?: string;
+  contextUri?: string;
+  uris?: string[];
+  offset?: SpotifyPlaybackOffset;
+  positionMs?: number;
+}
+
 export interface SpotifyDisconnectResponse {
   ok: true;
 }
@@ -81,6 +105,33 @@ export interface SpotifyService {
   getSessionSummary(request: FastifyRequest): Promise<SpotifySessionSummary>;
   getAccessTokenPayload(request: FastifyRequest): Promise<SpotifyTokenPayload>;
   getPlaybackState(request: FastifyRequest): Promise<SpotifyPlaybackStateSummary>;
+  searchTracks(
+    request: FastifyRequest,
+    query: {
+      query: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<SpotifyCatalogTrackPage>;
+  getCurrentUserPlaylists(
+    request: FastifyRequest,
+    query: {
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<SpotifyCatalogPlaylistPage>;
+  getPlaylistItems(
+    request: FastifyRequest,
+    playlistId: string,
+    query: {
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<SpotifyCatalogTrackPage>;
+  startPlayback(
+    request: FastifyRequest,
+    payload: SpotifyStartPlaybackRequestBody,
+  ): Promise<SpotifyPlaybackStateSummary>;
   transferPlayback(
     request: FastifyRequest,
     payload: SpotifyTransferRequestBody,
@@ -104,6 +155,10 @@ export function isSpotifyService(value: unknown): value is SpotifyService {
     typeof candidate.getSessionSummary === "function" &&
     typeof candidate.getAccessTokenPayload === "function" &&
     typeof candidate.getPlaybackState === "function" &&
+    typeof candidate.searchTracks === "function" &&
+    typeof candidate.getCurrentUserPlaylists === "function" &&
+    typeof candidate.getPlaylistItems === "function" &&
+    typeof candidate.startPlayback === "function" &&
     typeof candidate.transferPlayback === "function" &&
     typeof candidate.disconnect === "function"
   );

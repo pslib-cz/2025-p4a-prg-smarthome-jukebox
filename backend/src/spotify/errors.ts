@@ -4,6 +4,7 @@ export type SpotifyErrorCode =
   | "spotify_premium_required"
   | "spotify_invalid_state"
   | "spotify_missing_code"
+  | "spotify_invalid_request"
   | "spotify_device_missing"
   | "spotify_upstream_error"
   | "spotify_internal_error";
@@ -71,6 +72,12 @@ export function spotifyMissingCode(
   message = "Spotify callback is missing the authorization code.",
 ) {
   return new SpotifyApiError(400, "spotify_missing_code", message);
+}
+
+export function spotifyInvalidRequest(
+  message = "Spotify request payload is invalid.",
+) {
+  return new SpotifyApiError(400, "spotify_invalid_request", message);
 }
 
 export function spotifyDeviceMissing(

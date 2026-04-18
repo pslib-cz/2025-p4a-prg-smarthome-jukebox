@@ -1,6 +1,6 @@
 # HAJukeBox: Co Máme A Co Zbývá
 
-Last updated: 2026-04-16
+Last updated: 2026-04-18
 
 ## Zdroje
 
@@ -24,6 +24,7 @@ Projekt už má hotový použitelný baseline skeleton:
 - frontend umí číst reálná backend data a přehrávat lokální MP3 v prohlížeči
 - frontend umí číst reálnou `Home Assistant` telemetrii přes `REST + WebSocket`
 - `homeassistant/` obsahuje verzovaný bridge scaffold pro media summary mirror, telemetry helpery a Google Assistant request entity
+- `Home Assistant Cloud / Nabu Casa` voice path už byl reálně propojen s Google Home a spoken-command smoke test prošel
 - `esp/` obsahuje baseline firmware pro `ESP32` telemetrii, mode LED a první experimentální `Local MP3` audio render přes `I2S`
 - `Telemetry Deck` pokrývá prakticky všechny prioritní `P0` a většinu `P1/P2` prvků
 - `Spotify` je implementované jako bonusová vrstva
@@ -186,16 +187,19 @@ Spotify už není hlavní blocker, ale ještě zbývá:
 
 ### Voice / Google Assistant
 
-Google Assistant už má první lokální implementační slice:
+Google Assistant už má reálně ověřenou cloudovou slice:
 
 - HA request entity
 - HA automace, které překládají voice trigger na media skripty
 - frontend feedback stav pro poslední voice command
+- `Home Assistant Cloud / Nabu Casa` linking
+- spoken-command smoke test
+- dokumentovaný seznam přímých příkazů a doporučených rutin
 
 Stále ale zbývá:
 
-- propojit reálný Google Home / Google Assistant cloud path
-- udělat jeden manuální spoken-command smoke
+- případně přidat další Google Home personal routines pro přirozenější phrasing
+- případně rozšířit voice surface o další akce nad rámec aktuálních osmi request entit
 
 ### P3 UX položky
 
@@ -213,7 +217,7 @@ Stále odložené:
 3. Dokončit `Local MP3` playback sync a failure handling.
 4. Ověřit alespoň jednu až dvě reálné HA automace včetně logů.
 5. Udělat manuální Spotify smoke s reálným účtem.
-6. Teprve potom řešit `Google Assistant` a odložené `P3` UI položky.
+6. Teprve potom řešit případné rozšíření `Google Assistant` a odložené `P3` UI položky.
 
 ## Praktická Odpověď Na Otázku "Co Nám Teď Zbývá?"
 
@@ -224,6 +228,5 @@ Pokud to zkrátíme na minimum, zbývá hlavně toto:
 - doladit demo stabilitu `Local MP3`
 - ověřit živé automace a logy
 - udělat poslední manuální Spotify smoke
-- udělat poslední manuální Google Assistant smoke
 
 Všechno ostatní už je buď hotové, nebo je to bonus mimo baseline.

@@ -4,9 +4,14 @@ import type { InMemoryMediaService } from "../media/service.js";
 import {
   createSpotifyErrorResponse,
   isSpotifyApiError,
+  spotifyInvalidRequest,
   spotifyInternalError,
 } from "../spotify/errors.js";
-import type { SpotifyService, SpotifyTransferRequestBody } from "../spotify/types.js";
+import type {
+  SpotifyService,
+  SpotifyStartPlaybackRequestBody,
+  SpotifyTransferRequestBody,
+} from "../spotify/types.js";
 
 function sendSpotifyError(reply: FastifyReply, error: unknown, fallbackMessage: string) {
   if (isSpotifyApiError(error)) {
@@ -45,6 +50,34 @@ function applySpotifyResponseHeaders(reply: FastifyReply) {
   reply.header("Cache-Control", "no-store");
   reply.header("Pragma", "no-cache");
   appendVaryHeader(reply, "Cookie");
+}
+
+function parsePaginationValue(
+  value: string | number | undefined,
+  field: "limit" | "offset",
+) {
+  if (typeof value === "undefined") {
+    return undefined;
+  }
+
+  const parsed =
+    typeof value === "number"
+      ? value
+      : Number.parseInt(String(value), 10);
+
+  if (!Number.isInteger(parsed)) {
+    throw spotifyInvalidRequest(`Spotify ${field} must be an integer.`);
+  }
+
+  if (field === "limit" && (parsed < 1 || parsed > 50)) {
+    throw spotifyInvalidRequest("Spotify limit must be between 1 and 50.");
+  }
+
+  if (field === "offset" && parsed < 0) {
+    throw spotifyInvalidRequest("Spotify offset must be zero or greater.");
+  }
+
+  return parsed;
 }
 
 export function registerSpotifyRoutes(
@@ -163,6 +196,95 @@ export function registerSpotifyRoutes(
       return await spotifyService.getPlaybackState(request);
     } catch (error) {
       return sendSpotifyError(reply, error, "Failed to read Spotify playback state.");
+    }
+  });
+
+  app.get("/api/spotify/search", async (request, reply) => {
+    applySpotifyResponseHeaders(reply);
+
+    try {
+      const query = (request.query ?? {}) as {
+        query?: string;
+        limit?: string | number;
+        offset?: string | number;
+      };
+
+      if (!query.query?.trim()) {
+        throw spotifyInvalidRequest("Spotify search query is required.");
+      }
+
+      return await spotifyService.searchTracks(request, {
+        query: query.query,
+        limit: parsePaginationValue(query.limit, "limit"),
+        offset: parsePaginationValue(query.offset, "offset"),
+      });
+    } catch (error) {
+      return sendSpotifyError(reply, error, "Failed to search Spotify tracks.");
+    }
+  });
+
+  app.get("/api/spotify/playlists", async (request, reply) => {
+    applySpotifyResponseHeaders(reply);
+
+    try {
+      const query = (request.query ?? {}) as {
+        limit?: string | number;
+        offset?: string | number;
+      };
+
+      return await spotifyService.getCurrentUserPlaylists(request, {
+        limit: parsePaginationValue(query.limit, "limit"),
+        offset: parsePaginationValue(query.offset, "offset"),
+      });
+    } catch (error) {
+      return sendSpotifyError(reply, error, "Failed to read Spotify playlists.");
+    }
+  });
+
+  app.get("/api/spotify/playlists/:playlistId/items", async (request, reply) => {
+    applySpotifyResponseHeaders(reply);
+
+    try {
+      const query = (request.query ?? {}) as {
+        limit?: string | number;
+        offset?: string | number;
+      };
+      const params = request.params as {
+        playlistId?: string;
+      };
+
+      if (!params.playlistId?.trim()) {
+        throw spotifyInvalidRequest("Spotify playlist id is required.");
+      }
+
+      return await spotifyService.getPlaylistItems(
+        request,
+        params.playlistId,
+        {
+          limit: parsePaginationValue(query.limit, "limit"),
+          offset: parsePaginationValue(query.offset, "offset"),
+        },
+      );
+    } catch (error) {
+      return sendSpotifyError(reply, error, "Failed to read Spotify playlist items.");
+    }
+  });
+
+  app.post("/api/spotify/play", async (request, reply) => {
+    applySpotifyResponseHeaders(reply);
+
+    try {
+      const playback = await spotifyService.startPlayback(
+        request,
+        (request.body ?? {}) as SpotifyStartPlaybackRequestBody,
+      );
+      await publishSpotifyMirrorUpdate(request, {
+        action: "spotify.play",
+        message: "Spotify playback started from the browser catalog.",
+      });
+      return playback;
+    } catch (error) {
+      return sendSpotifyError(reply, error, "Failed to start Spotify playback.");
     }
   });
 

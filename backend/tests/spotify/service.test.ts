@@ -14,6 +14,7 @@ function createSpotifyConfig(overrides: Partial<Parameters<typeof buildApp>[3]> 
       "user-read-private",
       "user-read-playback-state",
       "user-modify-playback-state",
+      "playlist-read-private",
     ],
     mockMode: null,
     ...overrides,
@@ -111,7 +112,7 @@ describe("spotify service", () => {
     );
     expect(redirectUrl.searchParams.get("code_challenge_method")).toBe("S256");
     expect(redirectUrl.searchParams.get("scope")).toBe(
-      "streaming user-read-private user-read-playback-state user-modify-playback-state",
+      "streaming user-read-private user-read-playback-state user-modify-playback-state playlist-read-private",
     );
     expect(redirectUrl.searchParams.get("state")).toBeTruthy();
     expect(redirectUrl.searchParams.get("code_challenge")).toBeTruthy();
@@ -133,7 +134,7 @@ describe("spotify service", () => {
           expires_in: 3600,
           refresh_token: "spotify-refresh-token-1",
           scope:
-            "streaming user-read-private user-read-playback-state user-modify-playback-state",
+            "streaming user-read-private user-read-playback-state user-modify-playback-state playlist-read-private",
         }),
       )
       .mockResolvedValueOnce(
@@ -147,7 +148,7 @@ describe("spotify service", () => {
           token_type: "Bearer",
           expires_in: 3600,
           scope:
-            "streaming user-read-private user-read-playback-state user-modify-playback-state",
+            "streaming user-read-private user-read-playback-state user-modify-playback-state playlist-read-private",
         }),
       );
 
@@ -218,7 +219,7 @@ describe("spotify service", () => {
           expires_in: 3600,
           refresh_token: "spotify-refresh-token-free",
           scope:
-            "streaming user-read-private user-read-playback-state user-modify-playback-state",
+            "streaming user-read-private user-read-playback-state user-modify-playback-state playlist-read-private",
         }),
       )
       .mockResolvedValueOnce(
@@ -297,4 +298,5 @@ describe("spotify service", () => {
       },
     });
   });
+
 });

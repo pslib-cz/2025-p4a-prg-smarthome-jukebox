@@ -8,6 +8,7 @@ import VinylRecord from "./components/VinylRecord";
 import DiscoParticles from "./components/DiscoParticles";
 import SignalBay from "./components/SignalBay";
 import MusicPanel from "./components/MusicPanel";
+import SpotifyPage from "./components/SpotifyPage";
 import {
   DSP_PRESETS,
   isDspProfileKey,
@@ -53,6 +54,7 @@ export default function App() {
   const [songInfoView, setSongInfoView] = useState<"credits" | "audio">(
     "credits",
   );
+  const [surfaceView, setSurfaceView] = useState<"jukebox" | "spotify">("jukebox");
 
   const [bass, setBass] = useState(50);
   const [treble, setTreble] = useState(50);
@@ -180,6 +182,28 @@ export default function App() {
     <div className="app-shell" data-theme={theme} ref={appShellRef}>
       <audio ref={audioRef} preload="metadata" />
       <section className="hero-screen">
+        {surfaceView === "spotify" ? (
+          <SpotifyPage
+            theme={theme}
+            spotify={spotify}
+            modeControl={MODE_CONFIG[currentMode]}
+            onBack={() => setSurfaceView("jukebox")}
+            onOpenTelemetry={openSignalBay}
+            onCycleMode={cycleMode}
+            onSpotifyAuthorize={() => {
+              void sendCommand({ type: "spotify_authorize" });
+            }}
+            onSpotifyInitialize={() => {
+              void sendCommand({ type: "spotify_initialize" });
+            }}
+            onSpotifyTransfer={() => {
+              void sendCommand({ type: "spotify_transfer_playback" });
+            }}
+            onSpotifyDisconnect={() => {
+              void sendCommand({ type: "spotify_disconnect" });
+            }}
+          />
+        ) : (
         <div className="app" data-theme={theme}>
           <div className="controls-panel">
             <h2 className="controls-title">Control panel</h2>
@@ -379,9 +403,9 @@ export default function App() {
             songs={state.library.songs}
             playlists={state.library.playlists}
             activeSongId={activeSongId}
-            spotify={spotify}
             appStatus={appStatus}
             onCycleMode={cycleMode}
+            onOpenSpotifyPage={() => setSurfaceView("spotify")}
             onSelectTrack={(trackId) => {
               void sendCommand({
                 type: "play_track",
@@ -403,20 +427,9 @@ export default function App() {
                 }
               })();
             }}
-            onSpotifyAuthorize={() => {
-              void sendCommand({ type: "spotify_authorize" });
-            }}
-            onSpotifyInitialize={() => {
-              void sendCommand({ type: "spotify_initialize" });
-            }}
-            onSpotifyTransfer={() => {
-              void sendCommand({ type: "spotify_transfer_playback" });
-            }}
-            onSpotifyDisconnect={() => {
-              void sendCommand({ type: "spotify_disconnect" });
-            }}
           />
         </div>
+        )}
       </section>
 
       <section className="signal-bay-screen" ref={signalBayRef}>

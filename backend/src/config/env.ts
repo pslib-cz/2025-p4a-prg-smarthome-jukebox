@@ -4,10 +4,10 @@ const DEFAULT_MQTT_CLIENT_ID = "hajukebox-backend";
 const DEFAULT_MQTT_TOPIC_PREFIX = "jukebox";
 const DEFAULT_SPOTIFY_SCOPES = [
   "streaming",
-  "user-read-email",
   "user-read-private",
   "user-read-playback-state",
   "user-modify-playback-state",
+  "playlist-read-private",
 ];
 const MIN_PORT = 1;
 const MAX_PORT = 65_535;

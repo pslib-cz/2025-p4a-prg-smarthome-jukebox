@@ -33,6 +33,33 @@ describe("applyJukeboxCommand", () => {
     expect(unchangedState).toBe(mockJukeboxState);
   });
 
+  it("switches the queue to the selected playlist and starts from its first track", () => {
+    const playlistState = applyJukeboxCommand(mockJukeboxState, {
+      type: "play_playlist",
+      playlistId: 2,
+    });
+
+    expect(playlistState.media.isPlaying).toBe(true);
+    expect(playlistState.media.queue.map((track) => track.id)).toEqual([2, 3]);
+    expect(playlistState.media.activeTrackId).toBe(2);
+  });
+
+  it("restores the full library queue when selecting a track outside the current playlist", () => {
+    const playlistState = applyJukeboxCommand(mockJukeboxState, {
+      type: "play_playlist",
+      playlistId: 2,
+    });
+    const nextState = applyJukeboxCommand(playlistState, {
+      type: "play_track",
+      trackId: 6,
+    });
+
+    expect(nextState.media.activeTrackId).toBe(6);
+    expect(nextState.media.queue.map((track) => track.id)).toEqual(
+      mockJukeboxState.library.songs.map((track) => track.id),
+    );
+  });
+
   it("marks Spotify auth as in-progress until backend callback completes", () => {
     const spotifyState = applyJukeboxCommand(mockJukeboxState, {
       type: "spotify_authorize",

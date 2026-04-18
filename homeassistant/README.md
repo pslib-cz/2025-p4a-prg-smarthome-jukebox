@@ -135,10 +135,11 @@ Runtime note for Docker:
 - `Home Assistant Container` does not provide add-ons
 - the project therefore needs a separate `MQTT` broker container or another reachable broker service
 - the checked-in HA config is still compatible with this model because it depends on YAML packages, `REST`, `WebSocket`, and the standard `MQTT` integration
+- because the repo uses a minimal `configuration.yaml` instead of `default_config:`, it explicitly enables `recorder` and `logbook` so custom activity entries work
 
 ### Optional later
 
-- link a real `Google Assistant` / Google Home project to the exposed HA request entities
+- expand the current `Home Assistant Cloud` Google path with more voice routines or actions
 - trigger Spotify-related scripts once the browser player path exists
 
 ## Required Integrations
@@ -281,6 +282,7 @@ Implemented files:
 
 - `packages/jukebox_google_assistant.yaml`
 - `google_assistant.example.yaml`
+- `GOOGLE-ASSISTANT-SETUP.md`
 
 Request entities prepared for exposure:
 
@@ -288,6 +290,10 @@ Request entities prepared for exposure:
 - `input_button.hajukebox_google_pause_request`
 - `input_button.hajukebox_google_next_request`
 - `input_button.hajukebox_google_previous_request`
+- `input_button.hajukebox_google_focus_mode_request`
+- `input_button.hajukebox_google_party_mode_request`
+- `input_button.hajukebox_google_eco_mode_request`
+- `input_button.hajukebox_google_idle_mode_request`
 
 Voice feedback helpers:
 
@@ -295,13 +301,64 @@ Voice feedback helpers:
 - `input_text.hajukebox_last_voice_command`
 - `input_text.hajukebox_last_voice_response`
 
-The example config intentionally stays outside the live `configuration.yaml` load path because real Google setup still needs:
+The checked-in manual example intentionally stays outside the live `configuration.yaml`
+load path because the preferred current runtime path is `Home Assistant Cloud`.
+Use the manual file only if the team later decides to replace Nabu Casa with a fully
+self-managed Google Developer Console setup.
+
+The manual path still needs:
 
 - external HA access with SSL
 - a Google Home Developer Console project
 - a real `SERVICE_ACCOUNT.json`
 
+Current repo status:
+
+- `Home Assistant Cloud / Nabu Casa` is the preferred and already smoke-tested path
+- `GOOGLE-ASSISTANT-SETUP.md` documents both the preferred cloud path and the manual fallback path
+
 Do not use the old `Dialogflow -> Google Assistant` path for this project.
+
+## Google Assistant Voice Reference
+
+Direct voice commands are the most reliable path because the exposed HA entities are
+`input_button` request triggers, not a real `media_player`.
+
+Direct spoken commands that should work without extra Google routines:
+
+- `Hey Google, activate HAJukeBox Play Music`
+- `Hey Google, activate HAJukeBox Pause Music`
+- `Hey Google, activate HAJukeBox Next Track`
+- `Hey Google, activate HAJukeBox Previous Track`
+- `Hey Google, activate HAJukeBox Focus Mode`
+- `Hey Google, activate HAJukeBox Party Mode`
+- `Hey Google, activate HAJukeBox Eco Mode`
+- `Hey Google, activate HAJukeBox Idle Mode`
+
+Recommended personal-routine equivalents:
+
+- `play music on jukebox` -> `activate HAJukeBox Play Music`
+- `pause jukebox` -> `activate HAJukeBox Pause Music`
+- `next song on jukebox` -> `activate HAJukeBox Next Track`
+- `previous song on jukebox` -> `activate HAJukeBox Previous Track`
+- `focus mode on jukebox` -> `activate HAJukeBox Focus Mode`
+- `party mode on jukebox` -> `activate HAJukeBox Party Mode`
+- `eco mode on jukebox` -> `activate HAJukeBox Eco Mode`
+- `idle mode on jukebox` -> `activate HAJukeBox Idle Mode`
+
+Suggested Czech routine phrases for phone-based experiments:
+
+- `pust hudbu na jukeboxu` -> `activate HAJukeBox Play Music`
+- `pauzni jukebox` -> `activate HAJukeBox Pause Music`
+- `dalsi skladba na jukeboxu` -> `activate HAJukeBox Next Track`
+- `predchozi skladba na jukeboxu` -> `activate HAJukeBox Previous Track`
+- `prepni jukebox na focus` -> `activate HAJukeBox Focus Mode`
+
+Current limits:
+
+- phrases like `play music on jukebox` are not guaranteed as bare assistant commands without a personal routine
+- the exposed entities may work by voice but still not show as normal device tiles in the Google Home device grid
+- treat English as the demo-safe baseline and Czech as a best-effort mobile-only bonus path
 
 ## MQTT Contract
 
@@ -358,6 +415,7 @@ homeassistant/
   TODO.md
   SETUP-DOCKER.md
   SETUP-VIRTUALBOX.md
+  GOOGLE-ASSISTANT-SETUP.md
   configuration.yaml
   google_assistant.example.yaml
   packages/

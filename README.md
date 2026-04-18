@@ -19,6 +19,7 @@ Směr projektu je nyní zafixovaný do jedné architektury:
 - Rozsah backendu: [backend/README.md](./backend/README.md)
 - Seznam úkolů backendu: [backend/TODO.md](./backend/TODO.md)
 - Rozsah `Home Assistant`: [homeassistant/README.md](./homeassistant/README.md)
+- Google Assistant setup a voice reference: [homeassistant/GOOGLE-ASSISTANT-SETUP.md](./homeassistant/GOOGLE-ASSISTANT-SETUP.md)
 - Doporučené nastavení `Home Assistant` přes Docker: [homeassistant/SETUP-DOCKER.md](./homeassistant/SETUP-DOCKER.md)
 - Alternativní nastavení `Home Assistant` přes VirtualBox: [homeassistant/SETUP-VIRTUALBOX.md](./homeassistant/SETUP-VIRTUALBOX.md)
 - Seznam úkolů `Home Assistant`: [homeassistant/TODO.md](./homeassistant/TODO.md)
@@ -135,7 +136,7 @@ Důležitá interpretace:
 - `backend/` už vrací reálný lokální katalog, media state, media commandy, recent logy a stream endpoint pro jednotlivé tracky
 - `backend/` už obsahuje i první `Home Assistant` MQTT mirror scaffold a bonusové `Spotify` auth/session endpointy
 - `frontend/` už čte reálná backend data přes HTTP, umí přehrávat lokální MP3 v prohlížeči přes backend stream a umí použít reálnou `Home Assistant` telemetrii přes `REST + WebSocket`
-- `homeassistant/` už obsahuje verzovaný config scaffold pro media bridge, frontend telemetry helpery a `Google Assistant` request entity
+- `homeassistant/` už obsahuje verzovaný config scaffold pro media bridge, frontend telemetry helpery, `Google Assistant` request entity a zdokumentovaný `Home Assistant Cloud / Nabu Casa` voice path
 - `esp/` už obsahuje baseline `ESP32` firmware pro `MQTT` telemetrii, mode LED signalizaci a experimentální `Local MP3` render přes `I2S`
 - hlavní baseline blocker už není chybějící scaffolding, ale živé ověření a hardening celé cesty `ESP32 -> MQTT -> Home Assistant -> frontend` a `Home Assistant -> backend`
 

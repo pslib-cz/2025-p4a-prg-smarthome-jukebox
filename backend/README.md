@@ -143,6 +143,10 @@ Current Spotify endpoints:
 - `GET /api/spotify/session`
 - `GET /api/spotify/token`
 - `GET /api/spotify/state`
+- `GET /api/spotify/search`
+- `GET /api/spotify/playlists`
+- `GET /api/spotify/playlists/:playlistId/items`
+- `POST /api/spotify/play`
 - `POST /api/spotify/transfer`
 - `POST /api/spotify/disconnect`
 
@@ -227,6 +231,8 @@ Current behavior:
 - local HTTP Spotify redirect URIs must use an explicit loopback IP such as `127.0.0.1`, not `localhost`
 - the backend owns PKCE session state, code verifier validation, token exchange, and refresh-token storage
 - the frontend receives only short-lived access tokens through `GET /api/spotify/token`
+- recommended minimum scopes for browser playback plus playlist browsing are `streaming user-read-private user-read-playback-state user-modify-playback-state playlist-read-private`
+- Spotify Web API requests now honor `Retry-After` on `429` responses and otherwise fall back to bounded exponential backoff
 - deterministic mock states can be enabled for `curl` and Playwright verification without a real Spotify login
 
 ## Definition Of Done

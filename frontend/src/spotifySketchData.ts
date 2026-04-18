@@ -3,10 +3,9 @@ import type { JukeboxTrack, SpotifyState } from "./state/jukeboxTypes";
 export const SPOTIFY_REQUIRED_SCOPES = [
   "streaming",
   "user-read-private",
-  "user-read-email",
   "user-read-playback-state",
-  "user-read-currently-playing",
   "user-modify-playback-state",
+  "playlist-read-private",
 ] as const;
 
 export const SPOTIFY_SKETCH_TRACK: JukeboxTrack = {

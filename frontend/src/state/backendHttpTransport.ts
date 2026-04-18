@@ -9,6 +9,9 @@ import type {
   BackendSnapshot,
   BackendTrackPayload,
   BackendTransport,
+  SpotifyCatalogPlaylistPagePayload,
+  SpotifyCatalogTrackPagePayload,
+  SpotifyStartPlaybackPayload,
 } from "./remoteContracts";
 import type { EventLogItem, JukeboxCommand } from "./jukeboxTypes";
 
@@ -40,6 +43,55 @@ export async function fetchSpotifyAccessToken() {
   return readJson<{ accessToken: string; expiresAt: string | null; tokenType: "Bearer" }>(
     "/api/spotify/token",
   );
+}
+
+export async function searchSpotifyTracks(query: string, limit = 8, offset = 0) {
+  const params = new URLSearchParams({
+    query,
+    limit: String(limit),
+    offset: String(offset),
+  });
+
+  return readJson<SpotifyCatalogTrackPagePayload>(`/api/spotify/search?${params.toString()}`);
+}
+
+export async function fetchSpotifyPlaylists(limit = 8, offset = 0) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+
+  return readJson<SpotifyCatalogPlaylistPagePayload>(`/api/spotify/playlists?${params.toString()}`);
+}
+
+export async function fetchSpotifyPlaylistItems(
+  playlistId: string,
+  limit = 20,
+  offset = 0,
+) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+
+  return readJson<SpotifyCatalogTrackPagePayload>(
+    `/api/spotify/playlists/${encodeURIComponent(playlistId)}/items?${params.toString()}`,
+  );
+}
+
+export async function startSpotifyPlayback(payload: SpotifyStartPlaybackPayload) {
+  const response = await fetch("/api/spotify/play", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await readBackendError(response);
+    throw new Error(message ?? `Spotify play failed: ${response.status}`);
+  }
 }
 
 function mapBackendLogEntry(entry: BackendLogPayload): EventLogItem {

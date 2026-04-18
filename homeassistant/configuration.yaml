@@ -1,6 +1,96 @@
 homeassistant:
   packages: !include_dir_named packages
 
+cloud:
+  google_actions:
+    filter:
+      include_entities:
+        - input_button.hajukebox_google_play_request
+        - input_button.hajukebox_google_pause_request
+        - input_button.hajukebox_google_next_request
+        - input_button.hajukebox_google_previous_request
+        - input_button.hajukebox_google_focus_mode_request
+        - input_button.hajukebox_google_party_mode_request
+        - input_button.hajukebox_google_eco_mode_request
+        - input_button.hajukebox_google_idle_mode_request
+    entity_config:
+      input_button.hajukebox_google_play_request:
+        name: HAJukeBox Play Music
+        aliases:
+          - Start jukebox music
+          - Play local jukebox
+          - Pust hudbu na jukeboxu
+          - Prehraj hudbu na jukeboxu
+          - Jukebox play music
+        room: Living Room
+      input_button.hajukebox_google_pause_request:
+        name: HAJukeBox Pause Music
+        aliases:
+          - Pause jukebox music
+          - Stop jukebox music
+          - Pauzni hudbu na jukeboxu
+          - Zastav hudbu na jukeboxu
+          - Jukebox pause music
+        room: Living Room
+      input_button.hajukebox_google_next_request:
+        name: HAJukeBox Next Track
+        aliases:
+          - Skip jukebox track
+          - Play next jukebox song
+          - Dalsi skladba na jukeboxu
+          - Preskoc skladbu na jukeboxu
+          - Jukebox next track
+        room: Living Room
+      input_button.hajukebox_google_previous_request:
+        name: HAJukeBox Previous Track
+        aliases:
+          - Previous jukebox track
+          - Replay prior jukebox song
+          - Predchozi skladba na jukeboxu
+          - Zahraj predchozi skladbu na jukeboxu
+          - Jukebox previous track
+        room: Living Room
+      input_button.hajukebox_google_focus_mode_request:
+        name: HAJukeBox Focus Mode
+        aliases:
+          - Switch jukebox to focus mode
+          - Set jukebox focus mode
+          - Fokus na jukeboxu
+          - Prepni jukebox na focus
+          - Jukebox focus mode
+        room: Living Room
+      input_button.hajukebox_google_party_mode_request:
+        name: HAJukeBox Party Mode
+        aliases:
+          - Switch jukebox to party mode
+          - Set jukebox party mode
+          - Party na jukeboxu
+          - Prepni jukebox na party
+          - Jukebox party mode
+        room: Living Room
+      input_button.hajukebox_google_eco_mode_request:
+        name: HAJukeBox Eco Mode
+        aliases:
+          - Switch jukebox to eco mode
+          - Set jukebox eco mode
+          - Eco na jukeboxu
+          - Prepni jukebox na eco
+          - Jukebox eco mode
+        room: Living Room
+      input_button.hajukebox_google_idle_mode_request:
+        name: HAJukeBox Idle Mode
+        aliases:
+          - Switch jukebox to idle mode
+          - Set jukebox idle mode
+          - Idle na jukeboxu
+          - Prepni jukebox na idle
+          - Jukebox idle mode
+        room: Living Room
+
+recorder:
+
+logbook:
+
 http:
   cors_allowed_origins:
     - http://127.0.0.1:5173

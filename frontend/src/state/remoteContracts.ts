@@ -232,6 +232,53 @@ export interface BackendSpotifyPlaybackPayload {
   mockMode?: SpotifyMockMode | null;
 }
 
+export interface SpotifyCatalogTrackPayload {
+  id: string;
+  uri: string;
+  title: string;
+  artist: string;
+  album: string;
+  durationMs: number;
+  coverUrl: string | null;
+  externalUrl: string | null;
+}
+
+export interface SpotifyCatalogPlaylistPayload {
+  id: string;
+  uri: string;
+  name: string;
+  description: string | null;
+  ownerName: string | null;
+  imageUrl: string | null;
+  trackCount: number;
+  externalUrl: string | null;
+}
+
+export interface SpotifyCatalogTrackPagePayload {
+  items: SpotifyCatalogTrackPayload[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SpotifyCatalogPlaylistPagePayload {
+  items: SpotifyCatalogPlaylistPayload[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SpotifyStartPlaybackPayload {
+  deviceId?: string;
+  contextUri?: string;
+  uris?: string[];
+  offset?: {
+    position?: number;
+    uri?: string;
+  };
+  positionMs?: number;
+}
+
 export interface BackendSnapshot {
   connectionStatus: ConnectionStatus;
   health?: BackendHealthPayload;
