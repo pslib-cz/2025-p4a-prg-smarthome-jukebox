@@ -7,10 +7,12 @@ import {
 import {
   commandConflict,
   mediaLibraryPathMissing,
+  playlistNotFound,
   trackNotFound,
   trackStreamUnavailable,
 } from "./errors.js";
 import { scanMediaLibrary } from "./libraryScanner.js";
+import { createLibraryPlaylists } from "./playlists.js";
 import type {
   MediaCommand,
   MediaLogEntry,
@@ -133,29 +135,6 @@ function createMediaStateFromTracks(tracks: MediaTrack[]): MediaStateSnapshot {
   };
 }
 
-function humanizePlaylistName(mediaLibraryPath: string) {
-  const baseName = path.basename(mediaLibraryPath);
-  return baseName.trim().length > 0 ? baseName : "Local Library";
-}
-
-function createPlaylists(
-  tracks: MediaTrack[],
-  mediaLibraryPath: string | null,
-): MediaPlaylist[] {
-  if (tracks.length === 0) {
-    return [];
-  }
-
-  return [
-    {
-      id: 1,
-      name: mediaLibraryPath ? humanizePlaylistName(mediaLibraryPath) : "Local Library",
-      songCount: tracks.length,
-      icon: "◉",
-    },
-  ];
-}
-
 function parseTrackId(value: unknown) {
   if (typeof value === "number" && Number.isInteger(value)) {
     return value;
@@ -182,6 +161,9 @@ export function isMediaCommand(value: unknown): value is MediaCommand {
     case "next":
     case "previous":
       return true;
+
+    case "play_playlist":
+      return parseTrackId(command.playlistId) !== null;
 
     case "seek":
       return typeof command.progressPercent === "number";
@@ -317,6 +299,16 @@ export class InMemoryMediaService {
         this.log("media.previous", `Active track is now ${this.state.activeTrack.title}`);
         return this.getState();
 
+      case "play_playlist": {
+        const playlist = this.setActivePlaylist(command.playlistId);
+        this.state.isPlaying = true;
+        this.log(
+          "media.play_playlist",
+          `Playing playlist ${playlist.name} from ${this.state.activeTrack.title}`,
+        );
+        return this.getState();
+      }
+
       case "seek":
         if (this.state.durationMs <= 0) {
           throw commandConflict(
@@ -348,7 +340,9 @@ export class InMemoryMediaService {
     const scannedTracks = scanMediaLibrary(mediaLibraryPath);
 
     this.tracks = cloneState(scannedTracks);
-    this.playlists = cloneState(createPlaylists(scannedTracks, mediaLibraryPath));
+    this.playlists = cloneState(
+      createLibraryPlaylists(scannedTracks, mediaLibraryPath),
+    );
     this.state = cloneState(createMediaStateFromTracks(scannedTracks));
     this.refreshLibraryHealthSnapshot();
     this.trackFilePaths.clear();
@@ -405,12 +399,16 @@ export class InMemoryMediaService {
   }
 
   private setActiveTrack(trackId: number) {
-    const nextTrack =
-      this.state.queue.find((track) => track.id === trackId) ??
-      this.tracks.find((track) => track.id === trackId);
+    const queuedTrack = this.state.queue.find((track) => track.id === trackId);
+    const libraryTrack = this.tracks.find((track) => track.id === trackId);
+    const nextTrack = queuedTrack ?? libraryTrack;
 
     if (!nextTrack) {
       throw trackNotFound(trackId);
+    }
+
+    if (!queuedTrack && libraryTrack) {
+      this.state.queue = [...this.tracks];
     }
 
     this.state.activeTrackId = nextTrack.id;
@@ -418,6 +416,29 @@ export class InMemoryMediaService {
     this.state.progressPercent = 0;
     this.state.positionMs = 0;
     this.state.durationMs = parseDurationLabelToMs(nextTrack.duration);
+  }
+
+  private setActivePlaylist(playlistId: number) {
+    const playlist = this.playlists.find((entry) => entry.id === playlistId);
+
+    if (!playlist) {
+      throw playlistNotFound(playlistId);
+    }
+
+    const tracksById = new Map(this.tracks.map((track) => [track.id, track]));
+    const playlistTracks = playlist.trackIds.flatMap((trackId) => {
+      const track = tracksById.get(trackId);
+      return track ? [track] : [];
+    });
+
+    if (playlistTracks.length === 0) {
+      throw commandConflict("Cannot play an empty playlist.");
+    }
+
+    this.state.queue = playlistTracks;
+    this.setActiveTrack(playlistTracks[0].id);
+
+    return playlist;
   }
 
   private refreshLibraryHealthSnapshot() {

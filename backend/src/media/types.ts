@@ -15,6 +15,7 @@ export interface MediaPlaylist {
   name: string;
   songCount: number;
   icon: string;
+  trackIds: number[];
 }
 
 export interface MediaAudioStatus {
@@ -82,6 +83,7 @@ export interface MediaLogEntry {
 export type MediaErrorCode =
   | "invalid_command"
   | "invalid_track_id"
+  | "playlist_not_found"
   | "media_library_path_missing"
   | "track_not_found"
   | "track_stream_unavailable"
@@ -112,6 +114,7 @@ export type MediaCommand =
   | { type: "pause" }
   | { type: "next" }
   | { type: "previous" }
+  | { type: "play_playlist"; playlistId: number }
   | { type: "seek"; progressPercent: number }
   | { type: "set_volume"; volumePercent: number }
   | { type: "play_track"; trackId: number };

@@ -23,19 +23,24 @@ describe("buildSignalBayViewModel", () => {
     );
 
     expect(model.distanceSummary).toEqual([
-      { label: "Current", value: "42 cm" },
-      { label: "Trend", value: "Approaching" },
-      { label: "Average", value: "81 cm" },
+      { label: "Live range", value: "42 cm" },
+      { label: "Motion", value: "Approaching" },
+      { label: "Session avg", value: "81 cm" },
       { label: "Claps today", value: "14" },
     ]);
     expect(model.summaryChips).toContain("RSSI -65 dBm");
     expect(model.roomReadouts).toContainEqual({
-      label: "Voice source",
-      value: "Google Assistant",
+      label: "Fusion source",
+      value: "Mobile + distance detected",
     });
     expect(model.roomReadouts).toContainEqual({
-      label: "Last voice",
-      value: "Play music",
+      label: "Last mode",
+      value: "Focus auto-armed",
+    });
+    expect(model.approachState).toEqual({
+      label: "Nearby zone",
+      detail: "42 cm from the sensor. Approaching inside close-range activation.",
+      tone: "good",
     });
     expect(model.systemHealth.find((item) => item.label === "Backend runtime")).toMatchObject({
       label: "Backend runtime",

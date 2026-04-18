@@ -1,0 +1,261 @@
+input_text:
+  hajukebox_mode_change_source_value:
+    name: HAJukeBox Mode Change Source Value
+    max: 48
+    initial: "manual"
+
+input_boolean:
+  hajukebox_distance_available_value:
+    name: HAJukeBox Distance Available Value
+    initial: false
+
+  hajukebox_manual_override_active_value:
+    name: HAJukeBox Manual Override Active Value
+    initial: false
+
+input_datetime:
+  hajukebox_distance_last_seen:
+    name: HAJukeBox Distance Last Seen
+    has_date: true
+    has_time: true
+
+timer:
+  hajukebox_manual_override:
+    name: HAJukeBox Manual Override
+    duration: "00:03:00"
+
+  hajukebox_clap_skip_cooldown:
+    name: HAJukeBox Clap Skip Cooldown
+    duration: "00:00:02"
+
+automation:
+  - id: hajukebox_distance_telemetry_stale
+    alias: HAJukeBox Distance Telemetry Stale
+    mode: single
+    trigger:
+      - platform: time_pattern
+        seconds: "/10"
+    condition:
+      - condition: state
+        entity_id: input_boolean.hajukebox_distance_available_value
+        state: "on"
+      - condition: template
+        value_template: >-
+          {% set last_seen = states('input_datetime.hajukebox_distance_last_seen') %}
+          {% if last_seen in ['unknown', 'unavailable', ''] %}
+            true
+          {% else %}
+            {{ (as_timestamp(now()) - as_timestamp(last_seen)) > 20 }}
+          {% endif %}
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.hajukebox_distance_available_value
+      - service: script.hajukebox_refresh_presence_fusion
+      - service: logbook.log
+        data:
+          name: HAJukeBox Distance
+          message: Distance telemetry timed out and is now treated as unavailable
+          entity_id: sensor.hajukebox_distance_cm
+
+  - id: hajukebox_presence_auto_focus_mode
+    alias: HAJukeBox Arrival Auto Focus Mode
+    mode: single
+    trigger:
+      - platform: template
+        value_template: >-
+          {{
+            is_state('binary_sensor.hajukebox_ping_target_connected', 'on')
+            and is_state('input_boolean.hajukebox_distance_available_value', 'on')
+            and (states('input_number.hajukebox_distance_cm_value') | int(0)) > 0
+            and (states('input_number.hajukebox_distance_cm_value') | int(0)) <= 120
+          }}
+        for:
+          seconds: 10
+    condition:
+      - condition: state
+        entity_id: input_boolean.hajukebox_mqtt_connected_value
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.hajukebox_manual_override_active_value
+        state: "off"
+      - condition: template
+        value_template: >-
+          {{ states('input_select.hajukebox_mode') in ['Idle', 'Eco', 'Unavailable'] }}
+    action:
+      - service: script.hajukebox_set_mode
+        data:
+          mode: focus
+          source: automation_arrival
+      - service: logbook.log
+        data:
+          name: HAJukeBox Arrival
+          message: Ping target and nearby distance switched the jukebox to focus mode
+          entity_id: input_select.hajukebox_mode
+
+  - id: hajukebox_presence_auto_eco_mode
+    alias: HAJukeBox Leave Auto Eco Mode
+    mode: single
+    trigger:
+      - platform: template
+        value_template: >-
+          {{
+            is_state('binary_sensor.hajukebox_ping_target_connected', 'off')
+            and (
+              is_state('input_boolean.hajukebox_distance_available_value', 'off')
+              or (states('input_number.hajukebox_distance_cm_value') | int(0)) == 0
+              or (states('input_number.hajukebox_distance_cm_value') | int(0)) > 250
+            )
+          }}
+        for:
+          seconds: 45
+    condition:
+      - condition: state
+        entity_id: input_boolean.hajukebox_mqtt_connected_value
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.hajukebox_manual_override_active_value
+        state: "off"
+      - condition: template
+        value_template: >-
+          {{ states('input_select.hajukebox_mode') not in ['Eco', 'Unavailable'] }}
+    action:
+      - service: script.hajukebox_set_mode
+        data:
+          mode: eco
+          source: automation_leave
+      - service: logbook.log
+        data:
+          name: HAJukeBox Leave
+          message: Ping target and distance both cleared, so the jukebox returned to eco mode
+          entity_id: input_select.hajukebox_mode
+
+  - id: hajukebox_manual_mode_override
+    alias: HAJukeBox Manual Mode Override
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: input_select.hajukebox_mode
+    variables:
+      selected_option: "{{ trigger.to_state.state if trigger.to_state else 'Unavailable' }}"
+      mode_source: "{{ states('input_text.hajukebox_mode_change_source_value') | lower | trim }}"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ mode_source == 'manual' and selected_option in ['Focus armed', 'Party'] }}
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.hajukebox_manual_override_active_value
+              - service: timer.start
+                target:
+                  entity_id: timer.hajukebox_manual_override
+              - service: logbook.log
+                data:
+                  name: HAJukeBox Override
+                  message: Manual mode override is active for the next 3 minutes
+                  entity_id: input_select.hajukebox_mode
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ mode_source == 'manual' and selected_option in ['Idle', 'Eco', 'Unavailable'] }}
+            sequence:
+              - service: timer.cancel
+                target:
+                  entity_id: timer.hajukebox_manual_override
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.hajukebox_manual_override_active_value
+
+  - id: hajukebox_manual_mode_override_finished
+    alias: HAJukeBox Manual Mode Override Finished
+    mode: single
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.hajukebox_manual_override
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.hajukebox_manual_override_active_value
+      - service: logbook.log
+        data:
+          name: HAJukeBox Override
+          message: Manual mode override expired and automations are active again
+          entity_id: input_select.hajukebox_mode
+
+  - id: hajukebox_mode_change_source_reset
+    alias: HAJukeBox Mode Change Source Reset
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: input_select.hajukebox_mode
+    action:
+      - delay:
+          seconds: 1
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_mode_change_source_value
+        data:
+          value: manual
+
+  - id: hajukebox_clap_next_track
+    alias: HAJukeBox Clap Next Track
+    mode: single
+    trigger:
+      - platform: mqtt
+        topic: jukebox/sensors/clap
+    condition:
+      - condition: state
+        entity_id: input_boolean.hajukebox_mqtt_connected_value
+        state: "on"
+      - condition: state
+        entity_id: timer.hajukebox_clap_skip_cooldown
+        state: idle
+    action:
+      - service: script.hajukebox_next
+      - service: timer.start
+        target:
+          entity_id: timer.hajukebox_clap_skip_cooldown
+      - service: logbook.log
+        data:
+          name: HAJukeBox Clap
+          message: Clap shortcut skipped to the next track
+          entity_id: sensor.hajukebox_clap_count_today
+
+  - id: hajukebox_esp32_mode_events
+    alias: HAJukeBox ESP32 Mode Events
+    mode: restart
+    trigger:
+      - platform: mqtt
+        topic: jukebox/system/event
+    variables:
+      event_name: "{{ trigger.payload_json.event | default('') }}"
+      ha_option: >-
+        {% if event_name == 'mode_focus' %}
+          Focus armed
+        {% elif event_name == 'mode_party' %}
+          Party
+        {% elif event_name == 'mode_eco' %}
+          Eco
+        {% elif event_name == 'mode_idle' %}
+          Idle
+        {% else %}
+        {% endif %}
+    condition:
+      - condition: template
+        value_template: "{{ ha_option | trim != '' }}"
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.hajukebox_mode_change_source_value
+        data:
+          value: edge_sync
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.hajukebox_mode
+        data:
+          option: "{{ ha_option | trim }}"

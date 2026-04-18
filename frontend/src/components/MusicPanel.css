@@ -44,6 +44,127 @@
   line-height: 1.5;
 }
 
+.playlist-browser-summary,
+.playlist-detail-head,
+.playlist-detail-actions {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 18%, var(--border-color));
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-primary) 9%, transparent), transparent 58%),
+    color-mix(in srgb, var(--bg-panel-hover) 72%, transparent);
+}
+
+.playlist-browser-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+}
+
+.playlist-browser-kicker,
+.playlist-detail-kicker,
+.playlist-detail-meta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.playlist-browser-summary strong {
+  font-family: "Outfit", sans-serif;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.playlist-browser-summary p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.playlist-card {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.playlist-card:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 18%, var(--border-color));
+  box-shadow: 0 12px 28px rgba(20, 16, 36, 0.08);
+}
+
+.playlist-card:focus-visible,
+.playlist-detail-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-primary) 52%, transparent);
+  outline-offset: 2px;
+}
+
+.playlist-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.playlist-detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.playlist-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.playlist-detail-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-panel-hover) 68%, transparent);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.25s ease, background 0.25s ease, color 0.25s ease;
+}
+
+.playlist-detail-button.primary {
+  border-color: color-mix(in srgb, var(--accent-primary) 26%, var(--border-color));
+  color: var(--accent-primary);
+}
+
+.playlist-detail-button:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 28%, var(--border-color));
+}
+
+.playlist-detail-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.playlist-detail-action-icon {
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .playlist-detail-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .spotify-sketch-panel {
   display: flex;
   flex-direction: column;

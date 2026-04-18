@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { MediaState, TelemetryState } from "../state/jukeboxTypes";
 import type { AppShellStatusViewModel } from "../state/appShellStatus";
 import AppStatusBanner from "./AppStatusBanner";
+import SignalBayActivityStream from "./SignalBayActivityStream";
 import "./SignalBay.css";
 import "./SignalBayPanels.css";
 import "./SignalBayTelemetry.css";
@@ -144,12 +145,11 @@ export default function SignalBay({
     backendRuntimeStatus === "ok"
       ? "Backend OK"
       : backendRuntimeStatus === "degraded"
-        ? "Backend degraded"
-        : backendRuntimeStatus === "unavailable"
-          ? "Backend unavailable"
-          : "Backend unknown";
+	      ? "Backend degraded"
+	        : backendRuntimeStatus === "unavailable"
+	          ? "Backend unavailable"
+	          : "Backend unknown";
   const viewModel = buildSignalBayViewModel(telemetry, media);
-  const recentEvents = telemetry.eventLog.slice(0, 4);
 
   return (
     <div className="signal-bay">
@@ -240,17 +240,17 @@ export default function SignalBay({
                   <div
                     key={marker.id}
                     className={`room-radar-marker tone-${marker.tone}`}
-                    style={{
-                      transform: `translate(-50%, -50%) rotate(${marker.angle}deg) translateY(-${marker.radius}px)`,
-                    }}
+                    style={
+                      {
+                        left: `${marker.x}%`,
+                        top: `${marker.y}%`,
+                        "--label-offset-x": `${marker.labelOffsetX}px`,
+                        "--label-offset-y": `${marker.labelOffsetY}px`,
+                      } as CSSProperties
+                    }
                   >
                     <span className="room-radar-dot" />
-                    <span
-                      className="room-radar-label"
-                      style={{ transform: `rotate(${-marker.angle}deg)` }}
-                    >
-                      {marker.label}
-                    </span>
+                    <span className="room-radar-label">{marker.label}</span>
                   </div>
                 ))}
               </div>
@@ -272,6 +272,8 @@ export default function SignalBay({
               </div>
             </div>
           </article>
+
+          <SignalBayActivityStream eventLog={telemetry.eventLog} />
 
           <article className="bay-panel system-health-panel">
             <div className="bay-panel-head">
@@ -301,10 +303,18 @@ export default function SignalBay({
           <article className="bay-panel distance-trace-panel">
             <div className="bay-panel-head">
               <div>
-                <span className="bay-panel-kicker">Distance Graph</span>
-                <h3 className="bay-panel-title">Approach timeline</h3>
+                <span className="bay-panel-kicker">Approach</span>
+                <h3 className="bay-panel-title">Range and motion</h3>
               </div>
               <span className="bay-panel-meta">{telemetry.distanceSeries.length} samples</span>
+            </div>
+
+            <div className="approach-status-card" data-tone={viewModel.approachState.tone}>
+              <span className="approach-status-led" />
+              <div className="approach-status-copy">
+                <strong>{viewModel.approachState.label}</strong>
+                <p>{viewModel.approachState.detail}</p>
+              </div>
             </div>
 
             <DistanceChart distanceSeries={telemetry.distanceSeries} />
@@ -315,19 +325,6 @@ export default function SignalBay({
                   <span>{item.label}</span>
                   <strong>{item.value}</strong>
                 </div>
-              ))}
-            </div>
-
-            <div className="clap-trace-strip" aria-label="Clap activity trace">
-              {viewModel.clapTrace.map((bar, index) => (
-                <span
-                  key={`${bar}-${index}`}
-                  className="clap-trace-bar"
-                  style={{
-                    height: `${bar}%`,
-                    animationDelay: `${index * 80}ms`,
-                  }}
-                />
               ))}
             </div>
           </article>
@@ -443,31 +440,6 @@ export default function SignalBay({
             </div>
           </article>
 
-          <article className="bay-panel event-tape-panel">
-            <div className="bay-panel-head">
-              <div>
-                <span className="bay-panel-kicker">Event Log</span>
-                <h3 className="bay-panel-title">Human-readable actions</h3>
-              </div>
-              <span className="bay-panel-meta">Last {recentEvents.length} events</span>
-            </div>
-
-            <div className="event-tape-list">
-              {recentEvents.map((event, index) => (
-                <div
-                  key={`${event.time}-${event.action}`}
-                  className="event-tape-item"
-                  style={{ animationDelay: `${index * 120}ms` }}
-                >
-                  <span className="event-tape-time">{event.time}</span>
-                  <div className="event-tape-copy">
-                    <strong>{event.action}</strong>
-                    <span>{event.meta}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
         </div>
       </div>
     </div>

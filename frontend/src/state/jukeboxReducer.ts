@@ -20,6 +20,22 @@ function getTrackById(state: JukeboxAppState, trackId: number) {
   );
 }
 
+function getPlaylistQueue(state: JukeboxAppState, playlistId: number) {
+  const playlist = state.library.playlists.find((entry) => entry.id === playlistId);
+
+  if (!playlist) {
+    return null;
+  }
+
+  const songsById = new Map(state.library.songs.map((song) => [song.id, song]));
+  const queue = playlist.trackIds.flatMap((trackId) => {
+    const track = songsById.get(trackId);
+    return track ? [track] : [];
+  });
+
+  return queue.length > 0 ? queue : null;
+}
+
 function setActiveTrack(state: JukeboxAppState, trackId: number) {
   const track = getTrackById(state, trackId);
 
@@ -27,10 +43,14 @@ function setActiveTrack(state: JukeboxAppState, trackId: number) {
     return state;
   }
 
+  const inQueue = state.media.queue.some((queueTrack) => queueTrack.id === track.id);
+  const nextQueue = inQueue ? state.media.queue : state.library.songs;
+
   return {
     ...state,
     media: {
       ...state.media,
+      queue: nextQueue,
       activeTrackId: track.id,
       activeTrack: track,
     },
@@ -89,6 +109,25 @@ export function applyJukeboxCommand(
 
     case "previous":
       return cycleTrack(state, "previous");
+
+    case "play_playlist": {
+      const queue = getPlaylistQueue(state, command.playlistId);
+
+      if (!queue) {
+        return state;
+      }
+
+      return {
+        ...state,
+        media: {
+          ...state.media,
+          isPlaying: true,
+          queue,
+          activeTrackId: queue[0].id,
+          activeTrack: queue[0],
+        },
+      };
+    }
 
     case "seek":
       return {

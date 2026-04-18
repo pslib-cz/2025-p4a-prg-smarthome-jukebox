@@ -3,6 +3,7 @@ import { mockJukeboxState } from "./mockJukeboxState";
 import {
   buildJukeboxStateFromRemoteSnapshots,
   deriveConnectionStatus,
+  mapBackendSnapshotToLibrary,
   mapBackendSnapshotToMedia,
   mapBackendSnapshotToSpotify,
   mapHomeAssistantSnapshotToTelemetry,
@@ -208,6 +209,89 @@ describe("mapBackendSnapshotToMedia", () => {
     expect(media.volumePercent).toBe(100);
     expect(media.progressPercent).toBe(0);
     expect(media.activeTrack.title).toBe(mockJukeboxState.media.activeTrack.title);
+  });
+});
+
+describe("mapBackendSnapshotToLibrary", () => {
+  it("maps backend playlist track membership into the shared library state", () => {
+    const library = mapBackendSnapshotToLibrary(
+      {
+        connectionStatus: "connected",
+        library: {
+          songs: [
+            {
+              id: "7",
+              title: "Pulse Runner",
+              artist: "Static Bloom",
+              album: "Night Shift",
+              duration: "03:40",
+              coverUrl: "/covers/pulse-runner.jpg",
+            },
+            {
+              id: "8",
+              title: "Glassline",
+              artist: "Static Bloom",
+              album: "Night Shift",
+              duration: "04:12",
+              coverUrl: "/covers/glassline.jpg",
+            },
+          ],
+          playlists: [
+            {
+              id: "11",
+              name: "Focus Stack",
+              songCount: 0,
+              icon: "◉",
+              trackIds: ["8", "7", "404"],
+            },
+          ],
+        },
+      },
+      mockJukeboxState.library,
+      mockJukeboxState.media.activeTrack,
+    );
+
+    expect(library.songs.map((track) => track.id)).toEqual([7, 8]);
+    expect(library.playlists[0]).toMatchObject({
+      id: 11,
+      name: "Focus Stack",
+      songCount: 3,
+      trackIds: [8, 7, 404],
+    });
+  });
+
+  it("deduplicates playlist track ids while preserving first-seen order", () => {
+    const library = mapBackendSnapshotToLibrary(
+      {
+        connectionStatus: "connected",
+        library: {
+          playlists: [
+            {
+              id: 5,
+              name: "Duplicate Filter",
+              songCount: 1,
+              trackIds: [2, "2", "3", "3", "bad"],
+            },
+          ],
+        },
+      },
+      mockJukeboxState.library,
+      mockJukeboxState.media.activeTrack,
+    );
+
+    expect(library.playlists[0].trackIds).toEqual([2, 3]);
+  });
+
+  it("keeps the previous library when the backend snapshot omits it", () => {
+    const library = mapBackendSnapshotToLibrary(
+      {
+        connectionStatus: "connected",
+      },
+      mockJukeboxState.library,
+      mockJukeboxState.media.activeTrack,
+    );
+
+    expect(library).toEqual(mockJukeboxState.library);
   });
 });
 

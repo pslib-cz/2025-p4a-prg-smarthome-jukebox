@@ -81,12 +81,12 @@
     grid-template-columns: 1fr;
     grid-template-areas:
       "presence"
+      "activity"
       "health"
       "distance"
       "mqtt"
       "automation"
-      "audio"
-      "events";
+      "audio";
   }
 }
 
@@ -105,8 +105,7 @@
 
   .room-pulse-readouts,
   .distance-summary-grid,
-  .audio-telemetry-grid,
-  .event-tape-list {
+  .audio-telemetry-grid {
     grid-template-columns: 1fr;
   }
 
@@ -150,7 +149,7 @@
     display: none;
   }
 
-  .event-tape-item {
+  .activity-line {
     grid-template-columns: 1fr;
     gap: 8px;
   }

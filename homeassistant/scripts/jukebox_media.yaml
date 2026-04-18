@@ -82,9 +82,15 @@ hajukebox_set_mode:
             - focus
             - party
             - eco
+    source:
+      name: Source
+      required: false
+      selector:
+        text:
   sequence:
     - variables:
         requested_mode: "{{ mode | default('idle') | string | lower | trim }}"
+        requested_source: "{{ source | default('manual') | string | lower | trim }}"
         ha_option: >-
           {% if requested_mode in ['focus', 'focus armed'] %}
             Focus armed
@@ -95,6 +101,11 @@ hajukebox_set_mode:
           {% else %}
             Idle
           {% endif %}
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.hajukebox_mode_change_source_value
+      data:
+        value: "{{ requested_source }}"
     - service: input_select.select_option
       target:
         entity_id: input_select.hajukebox_mode

@@ -42,7 +42,7 @@ describe("backendHttpTransport", () => {
         }),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify([{ id: 1, name: "Library", songCount: 1 }]), {
+        new Response(JSON.stringify([{ id: 1, name: "Library", songCount: 1, trackIds: [1] }]), {
           status: 200,
         }),
       )
@@ -85,10 +85,74 @@ describe("backendHttpTransport", () => {
     expect(snapshot.health?.status).toBe("degraded");
     expect(snapshot.media?.source).toBe("local");
     expect(snapshot.library?.songs).toHaveLength(1);
+    expect(snapshot.library?.playlists?.[0].trackIds).toEqual([1]);
     expect(snapshot.spotifySession?.authStatus).toBe("connected");
     expect(snapshot.spotifyPlayback?.deviceId).toBe("spotify-web-player-1");
     expect(snapshot.eventLog?.[0].action).toBe("library.scanned");
     expect(snapshot.eventLog?.[0].meta).toBe("Loaded 1 track");
+  });
+
+  it("trims backend recent logs to the newest 10 entries", async () => {
+    const recentLogs = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      time: `2026-01-01T00:${String(index).padStart(2, "0")}:00Z`,
+      action: `event.${index + 1}`,
+      meta: `Entry ${index + 1}`,
+    }));
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: "ok",
+            dependencies: {},
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ source: "local", availability: { overall: "ready" } }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(recentLogs), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            configured: false,
+            authenticated: false,
+            authStatus: "disconnected",
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            authenticated: false,
+            sdkStatus: "idle",
+            transferStatus: "idle",
+          }),
+          { status: 200 },
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const snapshot = await createBackendHttpTransport().loadSnapshot();
+
+    expect(snapshot.eventLog).toHaveLength(10);
+    expect(snapshot.eventLog?.[0]).toMatchObject({
+      action: "event.1",
+      meta: "Entry 1",
+    });
+    expect(snapshot.eventLog?.at(-1)).toMatchObject({
+      action: "event.10",
+      meta: "Entry 10",
+    });
   });
 
   it("surfaces structured backend request errors", async () => {

@@ -22,6 +22,7 @@ export interface JukeboxPlaylist {
   name: string;
   songCount: number;
   icon: string;
+  trackIds: number[];
 }
 
 export interface AudioStatus {
@@ -187,6 +188,7 @@ export type JukeboxCommand =
   | { type: "pause" }
   | { type: "next" }
   | { type: "previous" }
+  | { type: "play_playlist"; playlistId: number }
   | { type: "seek"; progressPercent: number }
   | { type: "set_volume"; volumePercent: number }
   | { type: "set_mode"; mode: JukeboxMode }

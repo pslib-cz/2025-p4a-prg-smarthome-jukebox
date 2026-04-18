@@ -201,6 +201,8 @@ Use stable names early so frontend, backend, and HA automations do not drift.
 - `sensor.hajukebox_presence_confidence`
 - `sensor.hajukebox_presence_reason`
 - `sensor.hajukebox_clap_count_today`
+- `input_boolean.hajukebox_distance_available_value`
+- `input_datetime.hajukebox_distance_last_seen`
 
 ### Device and broker health
 
@@ -214,6 +216,10 @@ Use stable names early so frontend, backend, and HA automations do not drift.
 
 - `input_select.hajukebox_mode`
 - `input_boolean.hajukebox_presence_enabled`
+- `input_boolean.hajukebox_manual_override_active_value`
+- `input_text.hajukebox_mode_change_source_value`
+- `timer.hajukebox_manual_override`
+- `timer.hajukebox_clap_skip_cooldown`
 
 ### Optional summary mirrors
 
@@ -250,14 +256,16 @@ Currently implemented in `scripts/jukebox_media.yaml`:
 
 - presence update from MQTT and device state
 - mode selection mirror from `input_select.hajukebox_mode` into `jukebox/media/command`
-- focus-mode activation from fused presence confidence
-- eco fallback when presence is truly gone
+- arrival automation: `ping on` plus nearby distance moves the system to `focus`
+- leave automation: `ping off` plus missing or distant presence moves the system to `eco`
+- manual `party` or `focus` selections arm a `3 minute` override window
+- clap detection skips to the next backend track with a `2 second` cooldown timer
+- stale distance telemetry is treated as unavailable instead of fake `0 cm`
 - event logging for every visible automation action
 - backend or player disconnect detection
 
 ### Optional later
 
-- clap shortcut to mode switching
 - Spotify source switch automation
 - Assist or Google-triggered scripts
 

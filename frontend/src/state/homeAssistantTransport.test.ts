@@ -71,6 +71,17 @@ describe("readHomeAssistantTransportConfig", () => {
     expect(readHomeAssistantTransportConfig({})).toBeNull();
   });
 
+  it("defaults the HA event log limit to 10", () => {
+    const config = readHomeAssistantTransportConfig({
+      VITE_HA_BASE_URL: "http://127.0.0.1:8123/",
+      VITE_HA_TOKEN: "secret-token",
+    });
+
+    expect(config).toMatchObject({
+      eventLogLimit: 10,
+    });
+  });
+
   it("builds a config from Vite env values", () => {
     const config = readHomeAssistantTransportConfig({
       VITE_HA_BASE_URL: "http://127.0.0.1:8123/",
@@ -157,6 +168,62 @@ describe("homeAssistantTransport", () => {
     expect(snapshot.eventLog?.[0]?.time).toMatch(/^\d{2}:\d{2}$/u);
     expect(snapshot.mqttFeed).toEqual([]);
     expect(snapshot.automationLanes).toEqual([]);
+  });
+
+  it("trims HA logbook entries to the configured event limit", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              entity_id: "sensor.hajukebox_distance_cm",
+              state: "31",
+            },
+          ]),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              entity_id: "sensor.hajukebox_distance_cm",
+              name: "Distance",
+              message: "changed to 29",
+              when: "2026-04-14T09:29:00Z",
+            },
+            {
+              entity_id: "sensor.hajukebox_distance_cm",
+              name: "Distance",
+              message: "changed to 30",
+              when: "2026-04-14T09:30:00Z",
+            },
+            {
+              entity_id: "sensor.hajukebox_distance_cm",
+              name: "Distance",
+              message: "changed to 31",
+              when: "2026-04-14T09:31:00Z",
+            },
+          ]),
+          { status: 200 },
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const snapshot = await createHomeAssistantTransport({
+      ...BASE_CONFIG,
+      eventLogLimit: 2,
+    }).loadSnapshot();
+
+    expect(snapshot.eventLog).toHaveLength(2);
+    expect(snapshot.eventLog?.map((entry) => entry.meta)).toEqual([
+      "changed to 31",
+      "changed to 30",
+    ]);
+    expect(snapshot.eventLog?.every((entry) => entry.action === "Distance")).toBe(
+      true,
+    );
   });
 
   it("sends mode changes to the HA set_mode script", async () => {
@@ -289,15 +356,44 @@ describe("homeAssistantTransport", () => {
       },
     });
 
+    socket.receive({
+      id: 2,
+      type: "event",
+      event: {
+        time_fired: "2026-04-14T10:13:00Z",
+        data: {
+          entity_id: "sensor.hajukebox_distance_cm",
+          old_state: {
+            entity_id: "sensor.hajukebox_distance_cm",
+            state: "29",
+            attributes: {
+              friendly_name: "Distance",
+            },
+          },
+          new_state: {
+            entity_id: "sensor.hajukebox_distance_cm",
+            state: "27",
+            attributes: {
+              friendly_name: "Distance",
+            },
+          },
+        },
+      },
+    });
+
     expect(snapshots.at(-1)).toEqual({
       connectionStatus: "connected",
       entities: [
         {
           entity_id: "sensor.hajukebox_distance_cm",
-          state: "29",
+          state: "27",
         },
       ],
       eventLog: [
+        {
+          action: "Distance",
+          meta: "29 -> 27",
+        },
         {
           action: "Distance",
           meta: "31 -> 29",

@@ -88,7 +88,7 @@ export const AUDIO_STATUS_BASE = {
 } as const;
 
 export const PLAYLISTS = [
-  { id: 1, name: "Chill Vibes", songCount: 12, icon: "🎧" },
-  { id: 2, name: "Night Drive", songCount: 8, icon: "🌙" },
-  { id: 3, name: "Workout Mix", songCount: 15, icon: "💪" },
+  { id: 1, name: "Chill Vibes", songCount: 3, icon: "🎧", trackIds: [1, 4, 6] },
+  { id: 2, name: "Night Drive", songCount: 2, icon: "🌙", trackIds: [2, 3] },
+  { id: 3, name: "Workout Mix", songCount: 3, icon: "💪", trackIds: [3, 5, 1] },
 ];

@@ -42,6 +42,14 @@ export function mediaLibraryPathMissing(
   return new MediaApiError(400, "media_library_path_missing", message);
 }
 
+export function playlistNotFound(playlistId: number) {
+  return new MediaApiError(
+    404,
+    "playlist_not_found",
+    `Playlist not found: ${playlistId}`,
+  );
+}
+
 export function trackNotFound(trackId: number) {
   return new MediaApiError(404, "track_not_found", `Track not found: ${trackId}`);
 }

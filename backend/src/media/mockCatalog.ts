@@ -29,6 +29,7 @@ const playlists: MediaPlaylist[] = [
     name: "Baseline Demo",
     songCount: tracks.length,
     icon: "◉",
+    trackIds: tracks.map((track) => track.id),
   },
 ];
 

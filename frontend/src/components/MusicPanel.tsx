@@ -7,17 +7,15 @@ import type {
 } from "../state/jukeboxTypes";
 import type {
   AppShellStatusViewModel,
-  DataAvailabilityState,
 } from "../state/appShellStatus";
-import PlaylistItem from "./PlaylistItem";
-import { ListIcon, MusicNoteIcon, SongsIcon } from "./Icons";
+import { MusicNoteIcon } from "./Icons";
+import MusicPanelLocalLibrary from "./MusicPanelLocalLibrary";
 import {
   buildSpotifyPanelViewModel,
   getSpotifyTrackProgress,
 } from "./spotifyPanelViewModel";
 import "./MusicPanel.css";
 
-type LocalTab = "playlist" | "songs";
 type PanelSourceView = "local" | "spotify";
 type SpotifyDetailView = "player" | "tech";
 
@@ -34,65 +32,11 @@ interface MusicPanelProps {
   appStatus: AppShellStatusViewModel;
   onCycleMode: () => void;
   onSelectTrack: (trackId: number) => void;
+  onPlayPlaylist: (playlistId: number, trackId?: number) => void;
   onSpotifyAuthorize: () => void;
   onSpotifyInitialize: () => void;
   onSpotifyTransfer: () => void;
   onSpotifyDisconnect: () => void;
-}
-
-function LocalPanelEmptyState({
-  kicker,
-  title,
-  copy,
-}: {
-  kicker: string;
-  title: string;
-  copy: string;
-}) {
-  return (
-    <div className="music-panel-empty" role="status">
-      <span className="music-panel-empty-kicker">{kicker}</span>
-      <strong>{title}</strong>
-      <p>{copy}</p>
-    </div>
-  );
-}
-
-function getCollectionEmptyCopy(
-  collectionState: DataAvailabilityState,
-  collectionLabel: "songs" | "playlists",
-) {
-  switch (collectionState) {
-    case "loading":
-      return {
-        kicker: "Syncing",
-        title: `Loading ${collectionLabel}`,
-        copy: "Waiting for the first payload from the shared app-state provider.",
-      };
-    case "offline":
-      return {
-        kicker: "Offline",
-        title: `${collectionLabel} are unavailable`,
-        copy:
-          "The connection dropped before this section received data. It will hydrate automatically after reconnect.",
-      };
-    case "error":
-      return {
-        kicker: "Error",
-        title: `Could not read ${collectionLabel}`,
-        copy:
-          "The provider failed before this list could synchronize. Keep the layout and retry the adapter.",
-      };
-    default:
-      return {
-        kicker: "Empty",
-        title: `No ${collectionLabel} yet`,
-        copy:
-          collectionLabel === "songs"
-            ? "This slot is ready for the required local MP3 source. The library will appear here after the first sync."
-            : "Playlists are optional at this stage. Create or import them after the local library is wired.",
-      };
-  }
 }
 
 function SpotifyLogoMark() {
@@ -133,12 +77,12 @@ export default function MusicPanel({
   appStatus,
   onCycleMode,
   onSelectTrack,
+  onPlayPlaylist,
   onSpotifyAuthorize,
   onSpotifyInitialize,
   onSpotifyTransfer,
   onSpotifyDisconnect,
 }: MusicPanelProps) {
-  const [rightTab, setRightTab] = useState<LocalTab>("songs");
   const [panelSourceView, setPanelSourceView] = useState<PanelSourceView>("local");
   const [spotifyDetailView, setSpotifyDetailView] =
     useState<SpotifyDetailView>("player");
@@ -146,11 +90,6 @@ export default function MusicPanel({
   const spotifyViewModel = useMemo(
     () => buildSpotifyPanelViewModel(spotify),
     [spotify],
-  );
-  const songsEmptyCopy = getCollectionEmptyCopy(appStatus.libraryState, "songs");
-  const playlistsEmptyCopy = getCollectionEmptyCopy(
-    appStatus.playlistState,
-    "playlists",
   );
 
   function handlePrimarySpotifyAction() {
@@ -199,75 +138,14 @@ export default function MusicPanel({
       </div>
 
       {panelSourceView === "local" ? (
-        <>
-          <div className="tabs right-tabs">
-            <button
-              className={`tab ${rightTab === "songs" ? "active" : ""}`}
-              onClick={() => setRightTab("songs")}
-            >
-              <SongsIcon className="tab-icon" /> Songs
-            </button>
-            <button
-              className={`tab ${rightTab === "playlist" ? "active" : ""}`}
-              onClick={() => setRightTab("playlist")}
-            >
-              <ListIcon className="tab-icon" /> Playlists
-            </button>
-          </div>
-
-          {rightTab === "songs" ? (
-            songs.length > 0 ? (
-              <div className="playlist-list">
-                {songs.map((song) => (
-                  <PlaylistItem
-                    key={song.id}
-                    title={song.title}
-                    artist={song.artist}
-                    duration={song.duration}
-                    coverUrl={song.coverUrl}
-                    isActive={song.id === activeSongId}
-                    onClick={() => onSelectTrack(song.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <LocalPanelEmptyState
-                kicker={songsEmptyCopy.kicker}
-                title={songsEmptyCopy.title}
-                copy={songsEmptyCopy.copy}
-              />
-            )
-          ) : (
-            <div className="playlists-view">
-              <button className="btn-create-playlist">
-                <span className="btn-create-icon">+</span>
-                Create Playlist
-              </button>
-              {playlists.length > 0 ? (
-                <div className="playlist-list">
-                  {playlists.map((playlist) => (
-                    <div key={playlist.id} className="playlist-card">
-                      <span className="playlist-card-icon">{playlist.icon}</span>
-                      <div className="playlist-card-info">
-                        <div className="playlist-card-name">{playlist.name}</div>
-                        <div className="playlist-card-count">
-                          {playlist.songCount} songs
-                        </div>
-                      </div>
-                      <span className="playlist-card-arrow">›</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <LocalPanelEmptyState
-                  kicker={playlistsEmptyCopy.kicker}
-                  title={playlistsEmptyCopy.title}
-                  copy={playlistsEmptyCopy.copy}
-                />
-              )}
-            </div>
-          )}
-        </>
+        <MusicPanelLocalLibrary
+          songs={songs}
+          playlists={playlists}
+          activeSongId={activeSongId}
+          appStatus={appStatus}
+          onSelectTrack={onSelectTrack}
+          onPlayPlaylist={onPlayPlaylist}
+        />
       ) : (
         <div className="spotify-sketch-panel">
           <div className="spotify-surface">

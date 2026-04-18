@@ -9,7 +9,7 @@ import type { JukeboxMode } from "./jukeboxTypes";
 import type { EventLogItem } from "./jukeboxTypes";
 
 const DEFAULT_LOGBOOK_HOURS = 6;
-const DEFAULT_EVENT_LOG_LIMIT = 12;
+const DEFAULT_EVENT_LOG_LIMIT = 10;
 const RECONNECT_DELAY_MS = 3_000;
 
 interface HomeAssistantLogbookEntry {
@@ -160,7 +160,7 @@ function mapLogbookEntryToEvent(entry: HomeAssistantLogbookEntry): EventLogItem 
 }
 
 function trimEventLog(eventLog: EventLogItem[], limit: number) {
-  return eventLog.slice(-limit);
+  return eventLog.slice(0, limit);
 }
 
 function mapStateChangedEventToLogItem(
@@ -269,7 +269,8 @@ async function loadRecentLogbook(
       entries
         .filter((entry) => trackedEntityIds.has(entry.entity_id ?? ""))
         .map(mapLogbookEntryToEvent)
-        .filter((entry): entry is EventLogItem => entry !== null),
+        .filter((entry): entry is EventLogItem => entry !== null)
+        .reverse(),
       config.eventLogLimit,
     );
   } catch {
@@ -492,7 +493,7 @@ export function createHomeAssistantTransport(
         const nextLogItem = mapStateChangedEventToLogItem(payload);
         if (nextLogItem) {
           eventLog = trimEventLog(
-            [...eventLog, nextLogItem],
+            [nextLogItem, ...eventLog],
             config.eventLogLimit,
           );
         }

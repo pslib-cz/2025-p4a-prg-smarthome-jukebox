@@ -79,6 +79,7 @@ export interface BackendPlaylistPayload {
   name: string;
   songCount: number;
   icon?: string;
+  trackIds?: Array<number | string>;
 }
 
 export interface BackendLogPayload {

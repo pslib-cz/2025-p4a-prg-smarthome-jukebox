@@ -9,8 +9,10 @@ export interface SignalLevel {
 export interface RoomMarker {
   id: string;
   label: string;
-  angle: number;
-  radius: number;
+  x: number;
+  y: number;
+  labelOffsetX: number;
+  labelOffsetY: number;
   tone: SignalTone;
 }
 
@@ -68,10 +70,42 @@ export const SIGNAL_LEVELS: SignalLevel[] = [
 export const SUMMARY_CHIPS = ["RSSI -65 dBm", "TLS 1.3", "Uptime 12h 48m"];
 
 export const ROOM_MARKERS: RoomMarker[] = [
-  { id: "entry", label: "Entry lane", angle: -34, radius: 126, tone: "accent" },
-  { id: "presence", label: "Presence lock", angle: 28, radius: 82, tone: "good" },
-  { id: "mobile", label: "Mobile beacon", angle: 78, radius: 112, tone: "soft" },
-  { id: "clap", label: "Clap echo", angle: 126, radius: 58, tone: "soft" },
+  {
+    id: "entry",
+    label: "Entry lane",
+    x: 32,
+    y: 26,
+    labelOffsetX: 16,
+    labelOffsetY: -10,
+    tone: "accent",
+  },
+  {
+    id: "presence",
+    label: "Presence lock",
+    x: 65,
+    y: 37,
+    labelOffsetX: 16,
+    labelOffsetY: -10,
+    tone: "good",
+  },
+  {
+    id: "mobile",
+    label: "Mobile beacon",
+    x: 72,
+    y: 69,
+    labelOffsetX: 16,
+    labelOffsetY: -10,
+    tone: "soft",
+  },
+  {
+    id: "clap",
+    label: "Clap echo",
+    x: 38,
+    y: 64,
+    labelOffsetX: 16,
+    labelOffsetY: -10,
+    tone: "soft",
+  },
 ];
 
 export const PRESENCE_CONFIDENCE = 85;

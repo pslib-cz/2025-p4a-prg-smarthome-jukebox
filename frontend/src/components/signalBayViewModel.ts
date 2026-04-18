@@ -17,6 +17,12 @@ export interface SystemHealthView {
   tone: "good" | "accent" | "soft";
 }
 
+export interface ApproachStateView {
+  label: string;
+  detail: string;
+  tone: "good" | "accent" | "soft";
+}
+
 export interface AudioTelemetryView {
   label: string;
   value: string;
@@ -34,6 +40,7 @@ export interface SignalBayViewModel {
   summaryChips: string[];
   roomReadouts: ReadoutView[];
   systemHealth: SystemHealthView[];
+  approachState: ApproachStateView;
   distanceSummary: ReadoutView[];
   clapTrace: number[];
   mqttTopics: string[];
@@ -80,6 +87,38 @@ function getAverageDistance(series: TelemetryState["distanceSeries"]) {
 
   const total = series.reduce((sum, point) => sum + point.value, 0);
   return Math.round(total / series.length);
+}
+
+function getApproachState(distanceCm: number, trend: string): ApproachStateView {
+  if (distanceCm <= 0) {
+    return {
+      label: "No range lock",
+      detail: "Waiting for a fresh ultrasonic echo.",
+      tone: "soft",
+    };
+  }
+
+  if (distanceCm <= 120) {
+    return {
+      label: "Nearby zone",
+      detail: `${distanceCm} cm from the sensor. ${trend} inside close-range activation.`,
+      tone: "good",
+    };
+  }
+
+  if (distanceCm <= 250) {
+    return {
+      label: "Room range",
+      detail: `${distanceCm} cm from the sensor. Movement is visible inside the room.`,
+      tone: "accent",
+    };
+  }
+
+  return {
+    label: "Clear lane",
+    detail: `${distanceCm} cm from the sensor. No nearby visitor lock right now.`,
+    tone: "soft",
+  };
 }
 
 function getBrokerLevel(system: TelemetryState["system"]) {
@@ -326,6 +365,7 @@ export function buildSignalBayViewModel(
   const currentDistance =
     telemetry.distanceSeries[telemetry.distanceSeries.length - 1]?.value ??
     telemetry.presence.distanceCm;
+  const distanceTrend = getDistanceTrend(telemetry.distanceSeries);
 
   return {
     signalLevels: [
@@ -343,8 +383,6 @@ export function buildSignalBayViewModel(
       { label: "Fusion source", value: telemetry.presence.reason },
       { label: "Last clap", value: telemetry.presence.lastClapAt },
       { label: "Last mode", value: telemetry.presence.lastMode },
-      { label: "Voice source", value: telemetry.voiceAssistant.source },
-      { label: "Last voice", value: telemetry.voiceAssistant.command },
     ],
     systemHealth: [
       {
@@ -390,11 +428,12 @@ export function buildSignalBayViewModel(
         tone: "soft",
       },
     ],
+    approachState: getApproachState(currentDistance, distanceTrend),
     distanceSummary: [
-      { label: "Current", value: `${currentDistance} cm` },
-      { label: "Trend", value: getDistanceTrend(telemetry.distanceSeries) },
+      { label: "Live range", value: `${currentDistance} cm` },
+      { label: "Motion", value: distanceTrend },
       {
-        label: "Average",
+        label: "Session avg",
         value: `${getAverageDistance(telemetry.distanceSeries)} cm`,
       },
       {

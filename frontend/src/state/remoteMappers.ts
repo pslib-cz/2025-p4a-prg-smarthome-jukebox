@@ -88,6 +88,21 @@ function normalizeTrackId(
   return fallbackId || fallbackIndex + 1;
 }
 
+function normalizePlaylistTrackIds(trackIds: BackendPlaylistPayload["trackIds"]) {
+  if (!Array.isArray(trackIds)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      trackIds.flatMap((trackId) => {
+        const parsedTrackId = parseTrackId(trackId);
+        return parsedTrackId === null ? [] : [parsedTrackId];
+      }),
+    ),
+  );
+}
+
 function formatMetric(value: number | null, unit: string, fallback: string) {
   if (value === null) {
     return fallback;
@@ -182,11 +197,17 @@ function normalizePlaylistPayload(
   payload: BackendPlaylistPayload,
   fallbackIndex = 0,
 ): JukeboxPlaylist {
+  const trackIds = normalizePlaylistTrackIds(payload.trackIds);
+  const normalizedSongCount = Number.isFinite(payload.songCount)
+    ? Math.max(0, Math.round(payload.songCount))
+    : 0;
+
   return {
     id: parseTrackId(payload.id) ?? fallbackIndex + 1,
     name: payload.name.trim() || `Playlist ${fallbackIndex + 1}`,
-    songCount: Math.max(0, Math.round(payload.songCount)),
+    songCount: Math.max(normalizedSongCount, trackIds.length),
     icon: payload.icon?.trim() || "◉",
+    trackIds,
   };
 }
 

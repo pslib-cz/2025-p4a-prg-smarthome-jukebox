@@ -105,17 +105,14 @@
 }
 
 .room-radar-marker {
-  top: 50%;
-  left: 50%;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transform-origin: center center;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
 }
 
 .room-radar-dot {
-  width: 12px;
-  height: 12px;
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 16px currentColor;
@@ -124,6 +121,9 @@
 }
 
 .room-radar-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   display: inline-flex;
   padding: 6px 10px;
   border: 1px solid currentColor;
@@ -133,6 +133,7 @@
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
+  transform: translate(var(--label-offset-x, 16px), var(--label-offset-y, -10px));
 }
 
 .tone-good {

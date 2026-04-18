@@ -13,6 +13,7 @@ import type {
 import type { EventLogItem, JukeboxCommand } from "./jukeboxTypes";
 
 const BACKEND_POLL_INTERVAL_MS = 4_000;
+const BACKEND_EVENT_LOG_LIMIT = 10;
 
 async function readBackendError(response: Response) {
   try {
@@ -76,7 +77,9 @@ export function createBackendHttpTransport(): BackendTransport {
         },
         spotifySession,
         spotifyPlayback,
-        eventLog: recentLogs.map(mapBackendLogEntry),
+        eventLog: recentLogs
+          .slice(0, BACKEND_EVENT_LOG_LIMIT)
+          .map(mapBackendLogEntry),
         receivedAt: new Date().toISOString(),
       };
     },

@@ -60,7 +60,7 @@ Status legend:
 
 - [x] Presence-triggered focus mode
 - [x] Eco or off when presence is truly gone
-- [ ] Clap-triggered shortcut if still desired
+- [x] Clap-triggered shortcut for next-track skipping with cooldown
 - [ ] Media-state event logging
 - [ ] Disconnect and recovery logging
 

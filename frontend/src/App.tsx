@@ -388,6 +388,21 @@ export default function App() {
                 trackId,
               });
             }}
+            onPlayPlaylist={(playlistId, trackId) => {
+              void (async () => {
+                await sendCommand({
+                  type: "play_playlist",
+                  playlistId,
+                });
+
+                if (typeof trackId === "number") {
+                  await sendCommand({
+                    type: "play_track",
+                    trackId,
+                  });
+                }
+              })();
+            }}
             onSpotifyAuthorize={() => {
               void sendCommand({ type: "spotify_authorize" });
             }}
