@@ -1,6 +1,6 @@
 # HAJukeBox: Co Máme A Co Zbývá
 
-Last updated: 2026-04-18
+Last updated: 2026-04-19
 
 ## Zdroje
 
@@ -25,7 +25,7 @@ Projekt už má hotový použitelný baseline skeleton:
 - frontend umí číst reálnou `Home Assistant` telemetrii přes `REST + WebSocket`
 - `homeassistant/` obsahuje verzovaný bridge scaffold pro media summary mirror, telemetry helpery a Google Assistant request entity
 - `Home Assistant Cloud / Nabu Casa` voice path už byl reálně propojen s Google Home a spoken-command smoke test prošel
-- `esp/` obsahuje baseline firmware pro `ESP32` telemetrii, mode LED a první experimentální `Local MP3` audio render přes `I2S`
+- `esp/` obsahuje baseline firmware pro `ESP32` telemetrii, mode LED a reálně ověřený experimentální `Local MP3` audio render přes `I2S`
 - `Telemetry Deck` pokrývá prakticky všechny prioritní `P0` a většinu `P1/P2` prvků
 - `Spotify` je implementované jako bonusová vrstva
 
@@ -35,6 +35,13 @@ Hlavní práce, která ještě zbývá, už není základní wiring. Zbývá hla
 2. stabilizovat demo-ready chování `Local MP3`
 3. potvrdit end-to-end automace a logování na živé sestavě
 4. zvolit a odzkoušet sdílený runtime setup pro `Home Assistant`, preferovaně přes Docker
+
+Poznámka k aktuálnímu audio stavu:
+
+- `Local MP3 -> backend -> MQTT state -> ESP32 -> I2S zesilovač -> reproduktor` bylo potvrzené na reálném HW
+- hlasitost funguje
+- jde o demo-ready MVP, ne o plně stabilní audio renderer
+- v klidném prostředí hraje dobře, ale při rušení na `2.4 GHz` může krátce škytat
 
 ## Co Už Máme
 
@@ -82,6 +89,9 @@ Podle `homeassistant/README.md`, `homeassistant/TODO.md` a `esp/README.md` už v
 - `jukebox_frontend_telemetry.yaml` pro helper entity, které frontend umí číst
 - `jukebox_google_assistant.yaml` pro request entity a voice feedback helpery
 - baseline `ESP32` sketch pro `MQTT` senzory, device health a mode LED příkazy
+- živě potvrzené `set_mode` příkazy z `Home Assistant` do `ESP32`
+- živě potvrzený `jukebox/media/state` mirror do `ESP32` pro `Local MP3` audio start
+- živě potvrzený `I2S` audio výstup z `ESP32`, aktuálně s limity Wi-Fi stability
 
 ### 4. Spotify bonus vrstva
 
@@ -130,14 +140,17 @@ Ještě potřebujeme:
 
 - potvrdit finální seznam HA entit používaných pro telemetrii
 - potvrdit finální MQTT topic namespace pro živý provoz
-- potvrdit, že `ESP32 -> MQTT -> Home Assistant -> frontend` funguje na reálné sestavě, ne jen na fake/mock datech
+- zapsat a zmrazit, které části integračního toku už jsou skutečně potvrzené na živé sestavě a které jsou stále jen best-effort
 
 Poznámka:
 
 - návrh HA entit, helperů a MQTT topiců už v repu existuje
 - `docs/progress.md` správně vede živé potvrzení entity/topic kontraktu jako stále otevřený úkol
 
-Prakticky to znamená, že návrh už existuje, ale chybí finální potvrzení na živém stacku.
+Prakticky:
+
+- základní živý stack už potvrzený je
+- zbývá ho spíš uklidit, popsat a zmrazit pro demo
 
 ### 2. Dotáhnout demo-ready stabilitu `Local MP3`
 

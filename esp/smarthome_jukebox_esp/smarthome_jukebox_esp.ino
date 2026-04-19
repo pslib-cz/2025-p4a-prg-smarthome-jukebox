@@ -7,7 +7,7 @@
 #define LED_BUILTIN 2
 #endif
 
-// ===== User setup ===== -> prozatimní udaje
+// ===== User setup =====
 const char* WIFI_SSID = "asus";
 const char* WIFI_PASSWORD = "123456789";
 
@@ -17,8 +17,13 @@ const char* MQTT_USER = "admin";
 const char* MQTT_PASSWORD = "1234";
 const char* BACKEND_HOST = MQTT_HOST;
 const uint16_t BACKEND_PORT = 3000;
+#define ENABLE_I2S_TEST_TONE 0
+#define TEST_TONE_FREQUENCY_HZ 440
+#define TEST_TONE_VOLUME_PERCENT 5
+// Keep ADC-based mic/clap disabled while testing I2S streaming.
+#define ENABLE_MIC_INPUT 0
 
-// Device and MQTT topics (aligned with project README/homeassistant contract)
+// Device and MQTT topics aligned with the project contract.
 const char* DEVICE_ID = "esp32-jukebox-01";
 const char* TOPIC_DISTANCE = "jukebox/sensors/distance";
 const char* TOPIC_CLAP = "jukebox/sensors/clap";
@@ -31,7 +36,7 @@ const char* TOPIC_SYSTEM_EVENT = "jukebox/system/event";
 const char* TOPIC_MEDIA_COMMAND = "jukebox/media/command";
 const char* TOPIC_MEDIA_STATE = "jukebox/media/state";
 
-// Pin map from your hardware wiring
+// Pin map from the current hardware wiring.
 const int PIN_LED_STATUS = LED_BUILTIN;
 const int PIN_ULTRASONIC_TRIG = 5;
 const int PIN_ULTRASONIC_ECHO = 18;
@@ -42,16 +47,14 @@ const int PIN_I2S_LRC = 25;
 const int PIN_I2S_SD = 21;
 const int PIN_MODE_LED_DATA = 27;
 const int MODE_LED_COUNT = 8;
-
-// Clap detection from analog microphone signal
+const uint16_t MQTT_PACKET_BUFFER_BYTES = 1024;
+// Clap detection from the analog microphone signal.
 const int MIC_CLAP_THRESHOLD = 3200;
 const unsigned long CLAP_DEBOUNCE_MS = 300;
 // ======================
-
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 Adafruit_NeoPixel modeLeds(MODE_LED_COUNT, PIN_MODE_LED_DATA, NEO_GRB + NEO_KHZ800);
-
 unsigned long lastTelemetryMs = 0;
 unsigned long lastHealthPublishMs = 0;
 unsigned long lastMicPublishMs = 0;
@@ -64,11 +67,11 @@ unsigned long clapCount = 0;
 String currentMode = "idle";
 uint16_t partyHueOffset = 0;
 float focusPulsePhase = 0.0f;
-
 void setupAudioPlayback();
 void loopAudioPlayback();
 void handleMediaState(const String& payload);
 bool isAudioPlaybackActive();
+bool isAnyAudioOutputActive();
 
 uint32_t modeColor(const String& mode) {
   if (mode == "focus") {
@@ -146,12 +149,16 @@ long readDistanceCm() {
 }
 
 bool clapDetected() {
+#if !ENABLE_MIC_INPUT
+  return false;
+#else
   int micLevel = analogRead(PIN_MIC_ANALOG);
   if (micLevel >= MIC_CLAP_THRESHOLD && (millis() - lastClapMs) > CLAP_DEBOUNCE_MS) {
     lastClapMs = millis();
     return true;
   }
   return false;
+#endif
 }
 
 void publishJsonValue(const char* topic, const String& value, bool retained) {
@@ -260,14 +267,13 @@ bool extractJsonBool(const String& json, const char* key, bool fallback) {
 
 void connectWifi() {
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(400);
     Serial.print(".");
   }
-
   Serial.println();
   Serial.print("WiFi connected. IP: ");
   Serial.println(WiFi.localIP());
@@ -278,7 +284,7 @@ void publishPeriodicTelemetry() {
 
   if (now - lastDistancePublishMs >= 1000) {
     lastDistancePublishMs = now;
-    if (!isAudioPlaybackActive()) {
+    if (!isAnyAudioOutputActive()) {
       long distanceCm = readDistanceCm();
       publishJsonValue(TOPIC_DISTANCE, String(distanceCm), false);
     }
@@ -286,8 +292,10 @@ void publishPeriodicTelemetry() {
 
   if (now - lastMicPublishMs >= 250) {
     lastMicPublishMs = now;
+#if ENABLE_MIC_INPUT
     int micLevel = analogRead(PIN_MIC_ANALOG);
     publishJsonValue(TOPIC_MIC_LEVEL, String(micLevel), false);
+#endif
   }
 
   if (now - lastTelemetryMs >= 5000) {
@@ -387,6 +395,9 @@ void mqttCallback(char* topic, byte* message, unsigned int length) {
 }
 
 void connectMqtt() {
+  if (!mqttClient.setBufferSize(MQTT_PACKET_BUFFER_BYTES)) {
+    Serial.println("Failed to grow MQTT packet buffer.");
+  }
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
   mqttClient.setCallback(mqttCallback);
 
@@ -445,6 +456,13 @@ void setup() {
   Serial.println(PIN_I2S_SD);
   Serial.print("  LED_DATA=");
   Serial.println(PIN_MODE_LED_DATA);
+  if (ENABLE_I2S_TEST_TONE) {
+    Serial.print("I2S test tone enabled: ");
+    Serial.print(TEST_TONE_FREQUENCY_HZ);
+    Serial.print(" Hz @ ");
+    Serial.print(TEST_TONE_VOLUME_PERCENT);
+    Serial.println("%");
+  }
 
   setupAudioPlayback();
   connectWifi();

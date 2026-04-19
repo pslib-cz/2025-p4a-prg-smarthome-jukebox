@@ -15,29 +15,42 @@
 - odběr mediálních příkazů z `jukebox/media/command`
 - odběr mediálního stavu z `jukebox/media/state`
 - experimentální přehrání `Local MP3` z backend streamu přes `I2S`
+- dočasný `I2S` test tone režim pro rychlé ověření zesilovače a reproduktoru
 - heartbeat LED (indikace běhu firmware)
 
-## Arduino IDE setup
+## Arduino IDE 2.x setup
 
-1. Nainstaluj desku:
-   - **Tools -> Board -> Boards Manager**
-   - **ESP32 by Espressif Systems**
-2. Nainstaluj knihovnu:
-   - **Sketch -> Include Library -> Manage Libraries**
-   - **PubSubClient**
-   - **Adafruit NeoPixel**
-   - **ESP8266Audio**
-3. Otevři sketch:
+1. Nainstaluj `Arduino IDE 2.x`.
+2. Otevři **File -> Preferences**.
+3. Do **Additional boards manager URLs** přidej:
+   - `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
+4. Otevři **Tools -> Board -> Boards Manager** a nainstaluj:
+   - `esp32 by Espressif Systems`
+5. Otevři **Sketch -> Include Library -> Manage Libraries** a nainstaluj:
+   - `PubSubClient`
+   - `Adafruit NeoPixel`
+   - `ESP8266Audio`
+6. Otevři sketch:
    - `esp/smarthome_jukebox_esp/smarthome_jukebox_esp.ino`
-4. Doplň v horní části sketch:
+7. Zkontroluj nebo doplň v horní části sketch:
    - `WIFI_SSID`, `WIFI_PASSWORD`
    - `MQTT_HOST`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASSWORD`
    - `BACKEND_HOST`, `BACKEND_PORT`
-5. Nastav desku a port:
-   - **Tools -> Board -> ESP32 Dev Module** (nebo konkrétní model)
+   - `ENABLE_I2S_TEST_TONE`
+   - `TEST_TONE_FREQUENCY_HZ`
+   - `TEST_TONE_VOLUME_PERCENT`
+8. Připoj `ESP32` přes `USB`.
+9. Nastav desku a port:
+   - **Tools -> Board -> ESP32 Arduino -> ESP32 Dev Module**
    - **Tools -> Port -> COMx**
-6. Nahraj přes **Upload**
-7. Otevři **Serial Monitor** na `115200`
+10. Klikni na **Verify**.
+11. Klikni na **Upload**.
+12. Pokud se upload zasekne na `Connecting...`, podrž na desce tlačítko `BOOT`, dokud nezačne nahrávání.
+13. Otevři **Tools -> Serial Monitor** a nastav `115200 baud`.
+14. Po bootu sleduj:
+   - `SmartHome Jukebox ESP32 boot`
+   - `I2S test tone enabled: 440 Hz @ 18%`
+   - `Audio test tone started: 440 Hz @ 18%`
 
 ### Troubleshooting kompilace
 
@@ -84,6 +97,7 @@ Piny pro audio výstup:
 - `GPIO26 -> I2S BCLK`
 - `GPIO25 -> I2S LRC / WS`
 - `GPIO21 -> AMP SD / EN`
+- `reproduktor -> pouze do výstupu zesilovače (SPK+ / SPK-)`
 
 Rychlá bezpečnostní pravidla:
 
@@ -153,6 +167,29 @@ Aktuální firmware opravdu používá:
    - `SD / EN -> GPIO21`
    - `VIN -> 5V`
    - `GND -> GND`
+6. Reproduktor nikdy nepřipojuj přímo do `ESP32`:
+   - `speaker + -> AMP SPK+`
+   - `speaker - -> AMP SPK-`
+
+## Zapojení reproduktoru přes I2S zesilovač
+
+Pro typický `MAX98357A` nebo podobný `I2S` mono zesilovač:
+
+- `ESP32 GPIO22 -> AMP DIN`
+- `ESP32 GPIO26 -> AMP BCLK / BCK`
+- `ESP32 GPIO25 -> AMP LRC / WS`
+- `ESP32 GPIO21 -> AMP SD / EN`
+- `ESP32 5V / VIN -> AMP VIN`
+- `ESP32 GND -> AMP GND`
+- `speaker + -> AMP SPK+`
+- `speaker - -> AMP SPK-`
+
+Praktické poznámky:
+
+- všechny země musí být společné: `ESP32 GND`, `AMP GND`, případně externí `5V GND`
+- pokud má breakout vlastní `SD/EN` pull-up a pin není vyvedený, můžeš `GPIO21` ignorovat; v aktuálním firmware je ale připravený
+- použij radši malý pasivní reproduktor `4-8 Ohm`; nezačínej na vysoké hlasitosti
+- pokud zesilovač nemá zvuk a je napájený, zkontroluj nejdřív pořadí `DIN/BCLK/LRC`, ne software
 
 ## Wi-Fi a MQTT propojení s Docker runtime
 
@@ -278,6 +315,7 @@ a pošle dekódovaný `MP3` do `I2S` výstupu.
 - hlasitost přes `volumePercent`
 - stop při `pause`
 - retry při chybě otevření streamu
+- ověřený výstup `ESP32 -> I2S zesilovač -> reproduktor` na reálném HW
 
 ### Co tato verze neumí nebo jen omezeně
 
@@ -293,6 +331,55 @@ Prakticky:
 - po dohrání tracku renderer čeká na další změnu stavu z backendu
 - při aktivním audio streamu firmware dočasně nepublikuje `distance`, aby `pulseIn()` nedělal výpadky dekodéru
 
+### Current live status: working with limits
+
+Aktuálně je na živé sestavě potvrzené:
+
+- `ESP32` přijme `jukebox/media/state`
+- otevře `Local MP3` HTTP stream z backendu
+- přehraje zvuk přes `I2S` zesilovač do reproduktoru
+- hlasitost jde měnit přes backend stav
+
+Aktuální demo profil firmware:
+
+- `ENABLE_I2S_TEST_TONE = 0`
+- `ENABLE_MIC_INPUT = 0`
+- `MQTT` packet buffer je zvětšený kvůli většímu `media/state` payloadu
+
+Reálné limity, které byly na HW pozorované:
+
+- audio je použitelné pro demo, ale není to production-grade renderer
+- v klidném prostředí hraje stabilně
+- při rušení na `2.4 GHz` nebo při horší Wi-Fi kvalitě se může krátce kousnout nebo lupnout
+- typicky se to zhorší, když je `ESP32` na hotspotu a poblíž běží další bezdrátové zařízení
+
+Doporučení pro demo:
+
+- drž `ESP32` co nejblíž hotspotu nebo AP
+- během audio ukázky omez další `2.4 GHz` zařízení v okolí
+- pro audio demo nech vypnutý `mic/clap` vstup
+- pro čisté porovnání ztiš nebo zavři browser playback na notebooku
+
+### Dočasný I2S test tone režim
+
+Pro rychlé ověření zapojení zesilovače a reproduktoru je teď ve firmware zapnutý stabilní test tone:
+
+- `ENABLE_I2S_TEST_TONE = true`
+- `TEST_TONE_FREQUENCY_HZ = 440`
+- `TEST_TONE_VOLUME_PERCENT = 18`
+
+V tomhle režimu:
+
+- `ESP32` po bootu začne rovnou generovat stabilní tón do `I2S`
+- backend stream je dočasně obejitý
+- ultrasonic telemetrie se při aktivním tónu neposílá, aby si audio a `pulseIn()` navzájem nerozbíjely timing
+
+Jakmile reproduktor potvrdíš, vrať:
+
+- `ENABLE_I2S_TEST_TONE = false`
+
+a nahraj firmware znovu. Tím se vrátíš zpět na `Local MP3` stream z backendu.
+
 ### Doporučené audio zapojení
 
 Pro běžný `MAX98357A` nebo podobný `I2S` zesilovač:
@@ -306,7 +393,22 @@ Pro běžný `MAX98357A` nebo podobný `I2S` zesilovač:
 
 Reproduktor připojuj na výstup zesilovače, ne přímo na `ESP32`.
 
-### Rychlý smoke test audio cesty
+### Rychlý smoke test I2S hardware
+
+1. Nahraj firmware s:
+   - `ENABLE_I2S_TEST_TONE = true`
+2. Otevři `Serial Monitor` na `115200`.
+3. Počkej na:
+   - `Audio test tone started: 440 Hz @ 18%`
+4. Poslouchej reproduktor.
+5. Pokud nic neslyšíš, zkontroluj v tomhle pořadí:
+   - napájení zesilovače `5V`
+   - společnou `GND`
+   - `SD / EN` pin
+   - prohozené `DIN`, `BCLK`, `LRC`
+   - že je reproduktor na `SPK+ / SPK-`, ne na `ESP32`
+
+### Rychlý smoke test audio streamu z backendu
 
 1. Spusť Docker stack a ověř:
    - backend na `3000`
