@@ -1,215 +1,227 @@
-# HAJukeBox
+# Smart Jukebox
 
-HAJukeBox je lokální projekt chytrého jukeboxu postavený kolem `Home Assistant`, jednoho uzlu `ESP32`, vlastního mediálního backendu a samostatného frontendového dashboardu.
+![Home Assistant](https://img.shields.io/badge/Home_Assistant-41BDF5?style=flat-square&logo=homeassistant&logoColor=white)
+![ESP32](https://img.shields.io/badge/ESP32-333333?style=flat-square&logo=espressif&logoColor=white)
+![MQTT](https://img.shields.io/badge/MQTT-660066?style=flat-square&logo=eclipsemosquitto&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Spotify](https://img.shields.io/badge/Spotify-1DB954?style=flat-square&logo=spotify&logoColor=white)
+![Google Assistant](https://img.shields.io/badge/Google_Assistant-4285F4?style=flat-square&logo=googleassistant&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 
-Směr projektu je nyní zafixovaný do jedné architektury:
+Chytrý jukebox postavený kolem `Home Assistant`, jednoho uzlu `ESP32`, lokálního mediálního backendu a vlastního frontendového dashboardu. Projekt kombinuje automatizaci chytré domácnosti, živou telemetrii, lokální hudbu, `Spotify` a hlasové ovládání do jednoho demo-ready celku.
 
-- `Home Assistant` je centrální runtime pro automatizaci a monitoring
-- `backend/` vlastní stav médií a orchestrace přehrávání pro `Local MP3` a později `Spotify`
-- `frontend/` je hlavní uživatelský dashboard
-- `ESP32` publikuje telemetrii senzorů a zařízení přes `MQTT`
+Původně vznikl jako školní showcase, ale aktuálně už funguje jako ucelený lokální systém s jasnou architekturou, viditelnými automatizacemi a prezentovatelným UI. Praktická práce je v tuto chvíli považovaná za dokončenou. Další rozvoj může cílit hlavně na security, deployment hardening a dlouhodobou stabilitu.
 
-`Music Assistant` už není součástí základní architektury. Pokud byl nainstalovaný jen kvůli experimentům, berte ho jako dočasný a odstraňte ho, aby nevznikal zmatek.
+![Smart Jukebox Dashboard](docs/assets/readme/dashboard-hero.png)
 
-## Hlavní vstupní body repozitáře
+## Co projekt umí
 
-- Frontendový prototyp: [frontend/README.md](./frontend/README.md)
-- Frontendový souhrnný plán: [frontend/MASTER-PLAN.md](./frontend/MASTER-PLAN.md)
-- Hlavní architektonický plán: [docs/idea/master-plan.md](./docs/idea/master-plan.md)
-- Rozsah backendu: [backend/README.md](./backend/README.md)
-- Seznam úkolů backendu: [backend/TODO.md](./backend/TODO.md)
-- Rozsah `Home Assistant`: [homeassistant/README.md](./homeassistant/README.md)
-- Google Assistant setup a voice reference: [homeassistant/GOOGLE-ASSISTANT-SETUP.md](./homeassistant/GOOGLE-ASSISTANT-SETUP.md)
-- Doporučené nastavení `Home Assistant` přes Docker: [homeassistant/SETUP-DOCKER.md](./homeassistant/SETUP-DOCKER.md)
-- Alternativní nastavení `Home Assistant` přes VirtualBox: [homeassistant/SETUP-VIRTUALBOX.md](./homeassistant/SETUP-VIRTUALBOX.md)
-- Seznam úkolů `Home Assistant`: [homeassistant/TODO.md](./homeassistant/TODO.md)
-- ESP32 firmware baseline: [esp/README.md](./esp/README.md)
-- Zadání předmětu: [docs/assignment/assignment.md](./docs/assignment/assignment.md)
+- `Home Assistant` jako centrální mozek pro automatizaci, monitoring a entity
+- `ESP32` telemetrie přes `MQTT`
+- frontendový dashboard s přehrávačem, logy, health monitoringem a `Telemetry Deck`
+- lokální `MP3` knihovna s backendem pro stav přehrávání, playlisty a stream
+- `Spotify` browser playback, vyhledávání a playlisty
+- `Google Assistant` integrace přes `Home Assistant Cloud`
+- automatizované režimy `Focus`, `Party`, `Eco` a `Idle`
+- clap shortcut pro ovládání médií
+- experimentální audio výstup `ESP32 -> I2S zesilovač -> reproduktor`
 
-## Zvolená architektura
+## Proč je projekt zajímavý
 
-### Home Assistant
+Nejde jen o další webový přehrávač. Cílem bylo postavit malý, ale uvěřitelný smart-home scénář, ve kterém je hudba propojená s děním v místnosti.
 
-Vlastní:
+Jukebox proto:
 
-- logiku automatizací
-- stav místnosti a zařízení
-- model entit pro monitoring a ovládání
-- příjem `MQTT`
-- skripty a automatizace
+- reaguje na přítomnost a pohyb
+- sbírá a zobrazuje živou telemetrii
+- ukazuje logy a trace mezi senzorem a akcí
+- kombinuje software, hardware i automatizaci do jednoho toku
 
-Nevlastní:
+Výsledek je dobře demonstrovatelný jak na obrazovce, tak fyzicky na hardware.
 
-- indexaci lokálního katalogu médií
-- správu `Spotify` autentizace a session
-- čistě frontendový UI stav
+## Architektura
 
-### Vlastní backend
+```mermaid
+flowchart LR
+    ESP[ESP32<br/>senzory, LED, audio výstup] -->|MQTT telemetrie| BROKER[MQTT Broker]
+    BROKER --> HA[Home Assistant<br/>centrální automatizace]
+    HA -->|REST + WebSocket| UI[Frontend Dashboard]
+    UI -->|HTTP media API| API[Lokální backend]
+    HA -->|media commandy| API
+    API -->|MQTT mirror stavu| BROKER
+    UI -->|Web Playback SDK| SPOTIFY[Spotify]
+    GOOGLE[Google Assistant<br/>přes Home Assistant Cloud] --> HA
+```
 
-Vlastní:
+### Role jednotlivých částí
 
-- lokální `MP3` katalog a stav přehrávání
-- zpracování mediálních příkazů
-- později správu `Spotify` autentizace a session
-- mediální API pro frontend
-- propojení mediálního stavu do `Home Assistant`
+- `Home Assistant` drží automatizace, entity, normalizaci stavu a monitoring
+- `ESP32` sbírá fyzická data z místnosti a publikuje je do `MQTT`
+- backend řeší lokální hudbu, playlisty, stav přehrávání a mediální API
+- frontend spojuje hudební rozhraní s technickou observabilitou
+- `Spotify` a `Google Assistant` rozšiřují základní lokální scénář o bonusové funkce
 
-Nevlastní:
+## Hlavní funkce
 
-- logiku přítomnosti
-- automatizace režimů
-- primární pravdu o surové telemetrii z `ESP32`
+### Režimy
 
-### Frontend
+- `Focus`: klidovější režim navázaný na přítomnost
+- `Party`: výraznější režim s aktivnější vizuální signalizací
+- `Eco`: úsporný fallback při odchodu nebo neaktivitě
+- `Idle`: výchozí neutrální stav
 
-Vlastní:
+<p align="center">
+  <img src="docs/assets/readme/modes-showcase-focus.png" width="48%" alt="Focus mode" />
+  <img src="docs/assets/readme/modes-showcase-party.png" width="48%" alt="Party mode" />
+</p>
+<p align="center">
+  <img src="docs/assets/readme/modes-showcase-eco.png" width="48%" alt="Eco mode" />
+  <img src="docs/assets/readme/modes-showcase-idle.png" width="48%" alt="Idle mode" />
+</p>
 
-- UI dashboardu
-- mediální ovládání
-- prezentaci telemetrie
-- logy a monitorovací pohledy
+### Telemetry Deck
 
-Čte:
+`Telemetry Deck` dělá z projektu skutečný monitoring panel, ne jen skrytou automatizaci na pozadí.
 
-- `Home Assistant` pro automatizace, telemetrii a stav entit
-- `backend/` pro knihovnu médií, stav přehrávání a mediální příkazy
+Zobrazuje:
 
-### ESP32
+- distance a presence data
+- clap count
+- RSSI, uptime a stav zařízení
+- live event log
+- raw activity stream ve stylu topic feedu
+- návaznost `sensor -> decision -> action`
 
-Vlastní:
+<p align="center">
+  <img src="docs/assets/readme/telemetry-deck-detail.png" width="48%" alt="Telemetry Deck overview" />
+  <img src="docs/assets/readme/telemetry-deck-detail-2.png" width="48%" alt="Telemetry Deck detail" />
+</p>
 
-- detekci tlesknutí a vzdálenosti
-- hlášení stavu
-- akce na úrovni hardwaru
+### Média
 
-Sám nerozhoduje o chování systému na vyšší úrovni.
+- lokální `MP3` knihovna
+- browser playback ve frontendu
+- playlisty a výběr skladeb
+- synchronizovaný playback state
+- ovládání hlasitosti
+- `Spotify` search, playlisty a browser playback
 
-## Soulad se zadáním pro 3 lidi
+### Hlasové ovládání
 
-Zadání předmětu pro `N = 3` vyžaduje:
+Projekt podporuje `Google Assistant` přes `Home Assistant Cloud`, takže je možné spouštět přehrávání nebo měnit režimy hlasem či přes mobilní rutiny.
 
-- alespoň `2` lokální HA integrace
-- alespoň `3` scénáře
-- alespoň `6` entit
+### Hardware vrstva
 
-Doporučený základní plán pro splnění:
+Fyzická část je záměrně viditelná a jednoduchá na ukázku:
 
-- lokální integrace:
-  - `MQTT`
-  - jedna další lokální integrace v `Home Assistant`, doporučeně `Ping`
-- minimální scénáře:
-  - `Focus`
-  - `Party`
-  - `Eco / Presence`
-- minimální entity:
-  - distance
-  - clap count
-  - RSSI
-  - uptime
-  - mode
-  - zdroj médií nebo stav médií
+- `ESP32`
+- ultrazvukový senzor
+- mikrofon / clap input
+- adresovatelné LED
+- volitelný `I2S` audio výstup přes zesilovač
 
-Důležitá interpretace:
+## Jak to celé funguje
 
-- `Home Assistant` musí zůstat centrálním runtime viditelným v architektuře
-- vlastní backend je lokální mediální subsystém uvnitř stejného projektu, ne cloudová závislost
-- neschovávejte pravdu o místnosti ani automatizacích za backend
-- při přísné interpretaci hodnocení musí být důležitý stav médií a příkazy stále zrcadlené do `Home Assistant`
+1. `ESP32` čte signály z místnosti, například vzdálenost nebo clap aktivitu.
+2. Telemetrie se publikuje do lokálního `MQTT` brokeru.
+3. `Home Assistant` telemetrii přijímá, převádí ji na entity a spouští automatizace.
+4. Backend drží lokální hudební katalog, playback state a media commandy.
+5. Frontend čte telemetrii z `Home Assistant` a média z backendu.
+6. `Spotify` a `Google Assistant` doplňují základní lokální flow, ale nenahrazují ho.
 
-## Priority dodávky
+## Použité komponenty
 
-### Základ
+### Hardware
 
-- `Local MP3`
+- `ESP32 Dev Module`
+- `HC-SR04`
+- mikrofonní modul pro clap detekci
+- `WS2812` / `NeoPixel`
+- `I2S` zesilovač, například `MAX98357A`
+- malý reproduktor
+
+Detailní zapojení, Arduino setup a pin mapping jsou v [esp/README.md](./esp/README.md).
+
+### Software a platformy
+
 - `Home Assistant`
 - `MQTT`
-- `ESP32`
-- reálná telemetrie ve frontendu
+- `Docker Compose`
+- `Eclipse Mosquitto`
+- `Node.js`
+- `Fastify`
+- `React`
+- `TypeScript`
+- `Vite`
+- `Vitest`
+- `Arduino IDE`
 
-### Bonus
+### Integrace
 
+- `Spotify Web API`
 - `Spotify Web Playback SDK`
 - `Google Assistant`
+- `Home Assistant Cloud / Nabu Casa`
 
-## Aktuální stav repa
+## Rychlý runtime přehled
 
-- `backend/` už vrací reálný lokální katalog, media state, media commandy, recent logy a stream endpoint pro jednotlivé tracky
-- `backend/` už obsahuje i první `Home Assistant` MQTT mirror scaffold a bonusové `Spotify` auth/session endpointy
-- `frontend/` už čte reálná backend data přes HTTP, umí přehrávat lokální MP3 v prohlížeči přes backend stream a umí použít reálnou `Home Assistant` telemetrii přes `REST + WebSocket`
-- `homeassistant/` už obsahuje verzovaný config scaffold pro media bridge, frontend telemetry helpery, `Google Assistant` request entity a zdokumentovaný `Home Assistant Cloud / Nabu Casa` voice path
-- `esp/` už obsahuje baseline `ESP32` firmware pro `MQTT` telemetrii, mode LED signalizaci a experimentální `Local MP3` render přes `I2S`
-- hlavní baseline blocker už není chybějící scaffolding, ale živé ověření a hardening celé cesty `ESP32 -> MQTT -> Home Assistant -> frontend` a `Home Assistant -> backend`
+Preferovaný runtime je lokální `Docker Compose` stack:
 
-## Aktuální Docker Smoke Test
+```bash
+docker compose up -d --build
+```
 
-Ověřeno dne `2026-04-14` ve `WSL2 + Docker Desktop`:
+Výchozí lokální endpointy:
 
 - `Home Assistant`: `http://127.0.0.1:8123`
-- `frontend`: `http://127.0.0.1:5173`
-- `backend`: `http://127.0.0.1:3000`
+- `Frontend`: `http://127.0.0.1:5173`
+- `Backend`: `http://127.0.0.1:3000`
 - `MQTT broker`: `127.0.0.1:1883`
 
-Poznámky k tomuto runtime:
+Detailní setup:
 
-- první pull image `Home Assistant` je velký a může trvat několik minut
-- reálná hudba v Dockeru funguje přes bind mount host složky do `/music`
-- `ESP32` se po Wi‑Fi nepřipojuje na Docker service name `mqtt`, ale na LAN IP adresu hostitelského stroje
-- detailní fyzické zapojení a Wi‑Fi onboarding jsou v [esp/README.md](./esp/README.md)
+- [homeassistant/SETUP-DOCKER.md](./homeassistant/SETUP-DOCKER.md)
+- [homeassistant/SETUP-VIRTUALBOX.md](./homeassistant/SETUP-VIRTUALBOX.md)
+- [esp/README.md](./esp/README.md)
 
-## Doporučené pořadí realizace
+## Aktuální stav projektu
 
-1. Zafixovat kontrakty:
-   - backend media API
-   - `Home Assistant` entity
-   - `MQTT` topic namespace
-2. Stabilizovat `Local MP3` vertical slice:
-   - backend katalog + commandy + stream endpoint
-   - frontend browser playback + sync stavu
-3. Ověřit živou `Home Assistant` instanci na sdíleném runtime:
-   - preferovaně `Home Assistant Container` přes Docker
-   - `VirtualBox` držet jako fallback
-4. Potvrdit end-to-end cestu:
-   - `ESP32 -> MQTT -> Home Assistant -> frontend`
-   - `Home Assistant -> backend` media commandy
-5. Stabilizovat základní demo flow a failure handling
-6. Přidat realtime vrstvu jen pokud polling přestane stačit
-7. Udělat jeden reálný `Spotify` smoke test
-8. Udělat jeden reálný `Google Assistant` smoke test
+Projekt je aktuálně v dobrém showcase stavu:
 
-## Rozdělení týmu
+- end-to-end telemetrie funguje
+- automatizace režimů jsou implementované
+- lokální playback funguje
+- frontend umí monitoring, logy i media control
+- `Spotify` funguje jako rozšířená ukázková vrstva
+- `Google Assistant` je integrovaný přes `Home Assistant Cloud`
+- audio přes `ESP32` bylo ověřeno jako experimentální hardware feature
 
-### Student A
+Co by šlo ještě dále dopracovat:
 
-- frontendový dashboard
-- UI médií
-- telemetrická vrstva
-- napojení adaptérů
+- security a zabezpečení komunikace
+- deployment hardening
+- stabilita pro delší běh
+- další polish některých integračních hran
 
-### Student B
+## Rozcestník repozitáře
 
-- backendová mediální služba
-- stav a příkazy pro `Local MP3`
-- později integrace `Spotify`
-- mediální propojení do `Home Assistant`
+- Frontend overview: [frontend/README.md](./frontend/README.md)
+- Frontend plan: [frontend/MASTER-PLAN.md](./frontend/MASTER-PLAN.md)
+- Backend overview: [backend/README.md](./backend/README.md)
+- Backend tasks: [backend/TODO.md](./backend/TODO.md)
+- Home Assistant overview: [homeassistant/README.md](./homeassistant/README.md)
+- Google Assistant setup: [homeassistant/GOOGLE-ASSISTANT-SETUP.md](./homeassistant/GOOGLE-ASSISTANT-SETUP.md)
+- Docker setup: [homeassistant/SETUP-DOCKER.md](./homeassistant/SETUP-DOCKER.md)
+- VirtualBox setup: [homeassistant/SETUP-VIRTUALBOX.md](./homeassistant/SETUP-VIRTUALBOX.md)
+- Home Assistant tasks: [homeassistant/TODO.md](./homeassistant/TODO.md)
+- ESP32 firmware and wiring: [esp/README.md](./esp/README.md)
+- Main architecture plan: [docs/idea/master-plan.md](./docs/idea/master-plan.md)
+- Current status summary: [docs/current-status.md](./docs/current-status.md)
+- Assignment brief: [docs/assignment/assignment.md](./docs/assignment/assignment.md)
 
-### Student C
+## Závěr
 
-- `Home Assistant`
-- firmware pro `ESP32`
-- senzory
-- hardwarová cesta
-- publikování do `MQTT`
-- automatizace
-- entity
+Tohle už není jen scaffold nebo školní prototyp. Repo dnes představuje funkční smart jukebox showcase s viditelným hardwarem, viditelnými automatizacemi, živou telemetrií a vlastním frontendem.
 
-## Aktuální pravidlo
-
-Hlavní pracovní architektonický dokument je [docs/idea/master-plan.md](./docs/idea/master-plan.md).
-
-Zadání předmětu v [docs/assignment/assignment.md](./docs/assignment/assignment.md) zůstává externím omezením kvůli souladu s hodnocením.
-
-Doménové dokumenty níže používejte jen jako rozšíření master plánu, ne jako jeho náhradu:
-
-1. [backend/README.md](./backend/README.md)
-2. [homeassistant/README.md](./homeassistant/README.md)
-3. [frontend/MASTER-PLAN.md](./frontend/MASTER-PLAN.md)
+Pokud se na něm bude pokračovat dál, největší smysl dává dotáhnout security, deployment a dlouhodobou provozní stabilitu. Z hlediska produktu a prezentace už ale projekt drží pohromadě.

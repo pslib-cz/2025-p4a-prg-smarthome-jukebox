@@ -567,28 +567,49 @@ export function mapBackendSnapshotToMedia(
           track.id ===
           (parseTrackId(mediaPayload.activeTrackId) ?? previousMedia.activeTrackId),
       ) ?? previousMedia.activeTrack;
+  const nextActiveTrackId = normalizeTrackId(
+    mediaPayload.activeTrackId,
+    normalizedActiveTrack.id,
+  );
+  const nextSource = mediaPayload.source ?? previousMedia.source;
+  const nextIsPlaying = mediaPayload.isPlaying ?? previousMedia.isPlaying;
 
   const durationMs = parseNumber(mediaPayload.durationMs);
   const positionMs = parseNumber(mediaPayload.positionMs);
+  const progressPercent = parseNumber(mediaPayload.progressPercent);
+  const nextDurationMs =
+    durationMs !== null && durationMs > 0
+      ? Math.max(0, Math.round(durationMs))
+      : Math.max(0, Math.round(previousMedia.durationMs ?? 0));
+  const shouldPreserveLocalProgress =
+    nextSource === "local" &&
+    nextIsPlaying &&
+    nextActiveTrackId === previousMedia.activeTrackId &&
+    Math.max(0, Math.round(previousMedia.positionMs ?? 0)) > 0 &&
+    (positionMs === null || positionMs === 0) &&
+    (progressPercent === null || progressPercent === 0);
+  const nextPositionMs = shouldPreserveLocalProgress
+    ? Math.max(0, Math.round(previousMedia.positionMs ?? 0))
+    : Math.max(0, Math.round(positionMs ?? previousMedia.positionMs ?? 0));
   const computedProgress =
-    durationMs && durationMs > 0 && positionMs !== null
-      ? (positionMs / durationMs) * 100
+    nextDurationMs > 0 ? (nextPositionMs / nextDurationMs) * 100
       : null;
-
+	
   return {
-    source: mediaPayload.source ?? previousMedia.source,
+    source: nextSource,
     sourceLabel: mediaPayload.sourceLabel ?? previousMedia.sourceLabel,
     spotifyConnected:
       mediaPayload.spotifyConnected ?? previousMedia.spotifyConnected,
-    isPlaying: mediaPayload.isPlaying ?? previousMedia.isPlaying,
-    progressPercent: clampPercent(
-      parseNumber(mediaPayload.progressPercent) ?? computedProgress ?? previousMedia.progressPercent,
-    ),
+    isPlaying: nextIsPlaying,
+    progressPercent: shouldPreserveLocalProgress
+      ? previousMedia.progressPercent
+      : clampPercent(progressPercent ?? computedProgress ?? previousMedia.progressPercent),
+    positionMs: nextPositionMs,
+    durationMs: nextDurationMs,
     volumePercent: clampPercent(
       parseNumber(mediaPayload.volumePercent) ?? previousMedia.volumePercent,
     ),
-    activeTrackId:
-      normalizeTrackId(mediaPayload.activeTrackId, normalizedActiveTrack.id),
+    activeTrackId: nextActiveTrackId,
     activeTrack: normalizedActiveTrack,
     queue: normalizedQueue,
     audio: {

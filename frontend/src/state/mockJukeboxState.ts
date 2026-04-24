@@ -26,6 +26,8 @@ export const mockJukeboxState: JukeboxAppState = {
     spotifyConnected: false,
     isPlaying: false,
     progressPercent: 35,
+    positionMs: 77700,
+    durationMs: 222000,
     volumePercent: 75,
     activeTrackId: activeTrack.id,
     activeTrack,

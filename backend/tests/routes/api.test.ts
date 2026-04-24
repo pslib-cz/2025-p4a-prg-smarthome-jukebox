@@ -424,6 +424,47 @@ describe("backend API", () => {
     expect(response.body).toBe(fileContent);
   });
 
+  it("returns a generated fallback cover when the track has no sidecar image", async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), "hajukebox-cover-fallback-"));
+    const albumPath = path.join(tempDir, "Bonobo", "Migration");
+
+    await mkdir(albumPath, { recursive: true });
+    await writeFile(path.join(albumPath, "Kerala.mp3"), "fake-mp3-data");
+
+    app = buildApp({ logger: false }, tempDir);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/library/tracks/1/cover",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain("image/svg+xml");
+    expect(response.body).toContain("<svg");
+    expect(response.body).toContain("Kerala");
+  });
+
+  it("streams a sidecar cover image when one exists next to the track", async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), "hajukebox-cover-sidecar-"));
+    const albumPath = path.join(tempDir, "Bonobo", "Migration");
+    const coverContent = "png-cover-binary";
+
+    await mkdir(albumPath, { recursive: true });
+    await writeFile(path.join(albumPath, "Kerala.mp3"), "fake-mp3-data");
+    await writeFile(path.join(albumPath, "cover.png"), coverContent);
+
+    app = buildApp({ logger: false }, tempDir);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/library/tracks/1/cover",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain("image/png");
+    expect(response.body).toBe(coverContent);
+  });
+
   it("returns 404 for a stream request when the file is unavailable", async () => {
     app = buildApp({ logger: false });
 

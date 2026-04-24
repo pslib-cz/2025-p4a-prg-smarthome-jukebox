@@ -1,9 +1,43 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import type { MediaTrack } from "./types.js";
+import { buildTrackCoverUrl } from "./trackCovers.js";
+
+const require = createRequire(import.meta.url);
+const getMp3Duration = require("get-mp3-duration") as (buffer: Buffer) => number;
 
 function humanizeSegment(value: string) {
   return value.replaceAll(/[_-]+/gu, " ").replaceAll(/\s+/gu, " ").trim();
+}
+
+function formatDurationLabel(durationMs: number) {
+  if (!Number.isFinite(durationMs) || durationMs <= 0) {
+    return "00:00";
+  }
+
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function readDurationLabelFromMp3File(
+  filePath: string,
+  getDurationMs: (buffer: Buffer) => number = getMp3Duration,
+) {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    return formatDurationLabel(getDurationMs(fileBuffer));
+  } catch {
+    return "00:00";
+  }
 }
 
 function collectMp3Files(libraryPath: string): string[] {
@@ -44,8 +78,8 @@ function buildTrackFromFile(filePath: string, libraryPath: string, id: number): 
     title,
     artist,
     album,
-    duration: "00:00",
-    coverUrl: "",
+    duration: readDurationLabelFromMp3File(filePath),
+    coverUrl: buildTrackCoverUrl(id),
     relativePath,
   };
 }

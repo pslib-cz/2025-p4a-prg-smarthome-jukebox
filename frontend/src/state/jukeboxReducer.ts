@@ -9,6 +9,32 @@ function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function parseDurationLabelToMs(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return 0;
+  }
+
+  const segments = trimmed.split(":").map((segment) => Number.parseInt(segment, 10));
+
+  if (
+    segments.length < 2 ||
+    segments.length > 3 ||
+    segments.some((segment) => !Number.isInteger(segment) || segment < 0)
+  ) {
+    return 0;
+  }
+
+  if (segments.length === 2) {
+    const [minutes, seconds] = segments;
+    return (minutes * 60 + seconds) * 1000;
+  }
+
+  const [hours, minutes, seconds] = segments;
+  return (hours * 3600 + minutes * 60 + seconds) * 1000;
+}
+
 function getQueueIndex(queue: JukeboxTrack[], trackId: number) {
   return queue.findIndex((track) => track.id === trackId);
 }
@@ -53,6 +79,9 @@ function setActiveTrack(state: JukeboxAppState, trackId: number) {
       queue: nextQueue,
       activeTrackId: track.id,
       activeTrack: track,
+      progressPercent: 0,
+      positionMs: 0,
+      durationMs: parseDurationLabelToMs(track.duration),
     },
   };
 }
@@ -77,6 +106,9 @@ function cycleTrack(state: JukeboxAppState, direction: "next" | "previous") {
       ...state.media,
       activeTrackId: queue[nextIndex].id,
       activeTrack: queue[nextIndex],
+      progressPercent: 0,
+      positionMs: 0,
+      durationMs: parseDurationLabelToMs(queue[nextIndex].duration),
     },
   };
 }
@@ -125,18 +157,37 @@ export function applyJukeboxCommand(
           queue,
           activeTrackId: queue[0].id,
           activeTrack: queue[0],
+          progressPercent: 0,
+          positionMs: 0,
+          durationMs: parseDurationLabelToMs(queue[0].duration),
         },
       };
     }
 
-    case "seek":
+    case "seek": {
+      const durationMs = Math.max(0, Math.round(state.media.durationMs ?? 0));
+      const progressPercent = clampPercent(command.progressPercent);
+      return {
+        ...state,
+        media: {
+          ...state.media,
+          progressPercent,
+          positionMs: Math.round((durationMs * progressPercent) / 100),
+        },
+      };
+    }
+
+    case "local_playback_state_changed":
       return {
         ...state,
         media: {
           ...state.media,
           progressPercent: clampPercent(command.progressPercent),
+          positionMs: Math.max(0, Math.round(command.positionMs)),
+          durationMs: Math.max(0, Math.round(command.durationMs)),
         },
       };
+
 
     case "set_volume":
       return {

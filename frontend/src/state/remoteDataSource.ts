@@ -24,6 +24,7 @@ function isUiOnlyCommand(command: JukeboxCommand) {
     command.type === "set_theme" ||
     command.type === "set_dsp_profile" ||
     command.type === "set_spotify_connection" ||
+    command.type === "local_playback_state_changed" ||
     command.type === "spotify_initialize" ||
     command.type === "spotify_sdk_ready" ||
     command.type === "spotify_sdk_not_ready" ||

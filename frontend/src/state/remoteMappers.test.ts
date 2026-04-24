@@ -210,6 +210,41 @@ describe("mapBackendSnapshotToMedia", () => {
     expect(media.progressPercent).toBe(0);
     expect(media.activeTrack.title).toBe(mockJukeboxState.media.activeTrack.title);
   });
+
+  it("preserves local playback progress when the backend snapshot is stale", () => {
+    const snapshot: BackendSnapshot = {
+      connectionStatus: "connected",
+      media: {
+        source: "local",
+        sourceLabel: "Local MP3",
+        isPlaying: true,
+        positionMs: 0,
+        durationMs: 0,
+        progressPercent: 0,
+        activeTrackId: String(mockJukeboxState.media.activeTrackId),
+        activeTrack: {
+          id: String(mockJukeboxState.media.activeTrackId),
+          title: mockJukeboxState.media.activeTrack.title,
+          artist: mockJukeboxState.media.activeTrack.artist,
+          album: mockJukeboxState.media.activeTrack.album,
+          duration: mockJukeboxState.media.activeTrack.duration,
+          coverUrl: mockJukeboxState.media.activeTrack.coverUrl,
+        },
+      },
+    };
+
+    const media = mapBackendSnapshotToMedia(snapshot, {
+      ...mockJukeboxState.media,
+      isPlaying: true,
+      progressPercent: 61,
+      positionMs: 135_000,
+      durationMs: 222_000,
+    });
+
+    expect(media.progressPercent).toBe(61);
+    expect(media.positionMs).toBe(135_000);
+    expect(media.durationMs).toBe(222_000);
+  });
 });
 
 describe("mapBackendSnapshotToLibrary", () => {

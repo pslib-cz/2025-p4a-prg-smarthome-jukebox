@@ -68,14 +68,14 @@ In Home Assistant:
 The repository already pins the Nabu Casa Google exposure in
 `homeassistant/configuration.yaml` to these eight `input_button` entities:
 
-- play
-- pause
-- next
-- previous
-- focus mode
-- party mode
-- eco mode
-- idle mode
+- `input_button.hajukebox_google_play_request`
+- `input_button.hajukebox_google_pause_request`
+- `input_button.hajukebox_google_next_request`
+- `input_button.hajukebox_google_previous_request`
+- `input_button.hajukebox_google_focus_mode_request`
+- `input_button.hajukebox_google_party_mode_request`
+- `input_button.hajukebox_google_eco_mode_request`
+- `input_button.hajukebox_google_idle_mode_request`
 
 ### 3. Link Home Assistant Cloud in Google Home
 

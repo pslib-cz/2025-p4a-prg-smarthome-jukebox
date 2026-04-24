@@ -18,6 +18,8 @@ export const emptyJukeboxState: JukeboxAppState = {
     spotifyConnected: false,
     isPlaying: false,
     progressPercent: 0,
+    positionMs: 0,
+    durationMs: 0,
     volumePercent: 0,
     activeTrackId: EMPTY_TRACK.id,
     activeTrack: EMPTY_TRACK,

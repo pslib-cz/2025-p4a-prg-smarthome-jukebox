@@ -7,6 +7,14 @@ interface LocalAudioPlaybackOptions {
   sendCommand: (command: JukeboxCommand) => Promise<void>;
 }
 
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function toMs(value: number) {
+  return Number.isFinite(value) && value > 0 ? Math.round(value * 1000) : 0;
+}
+
 export function useLocalAudioPlayback({
   media,
   sendCommand,
@@ -63,6 +71,23 @@ export function useLocalAudioPlayback({
   useEffect(() => {
     const audio = audioRef.current;
 
+    if (!audio || !streamUrl || !Number.isFinite(audio.duration) || audio.duration <= 0) {
+      return;
+    }
+
+    const targetPositionMs = Math.max(0, Math.round(media.positionMs ?? 0));
+    const currentPositionMs = Math.round(audio.currentTime * 1000);
+
+    if (Math.abs(currentPositionMs - targetPositionMs) <= 1000) {
+      return;
+    }
+
+    audio.currentTime = Math.min(targetPositionMs / 1000, audio.duration);
+  }, [media.positionMs, streamUrl]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+
     if (!audio) {
       return;
     }
@@ -70,9 +95,30 @@ export function useLocalAudioPlayback({
     const handleEnded = () => {
       void sendCommand({ type: "next" });
     };
+    const publishPlaybackState = () => {
+      const durationMs = toMs(audio.duration);
+      const positionMs = toMs(audio.currentTime);
+      const progressPercent =
+        durationMs > 0 ? clampPercent((positionMs / durationMs) * 100) : 0;
 
+      void sendCommand({
+        type: "local_playback_state_changed",
+        progressPercent,
+        positionMs,
+        durationMs,
+      });
+    };
+
+    audio.addEventListener("loadedmetadata", publishPlaybackState);
+    audio.addEventListener("durationchange", publishPlaybackState);
+    audio.addEventListener("timeupdate", publishPlaybackState);
+    audio.addEventListener("seeked", publishPlaybackState);
     audio.addEventListener("ended", handleEnded);
     return () => {
+      audio.removeEventListener("loadedmetadata", publishPlaybackState);
+      audio.removeEventListener("durationchange", publishPlaybackState);
+      audio.removeEventListener("timeupdate", publishPlaybackState);
+      audio.removeEventListener("seeked", publishPlaybackState);
       audio.removeEventListener("ended", handleEnded);
     };
   }, [sendCommand]);

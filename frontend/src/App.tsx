@@ -38,6 +38,14 @@ import { nextMode, normalizeModeLabel } from "./state/modeState";
 const DEFAULT_DSP_PROFILE: DspProfileKey = "Vocal Clarity";
 const INITIAL_DSP_VALUES = DSP_PRESETS[DEFAULT_DSP_PROFILE];
 
+function formatPlaybackTime(ms: number | undefined) {
+  const totalSeconds = Math.max(0, Math.floor((ms ?? 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export default function App() {
   const { state, status, error, sendCommand } = useJukebox();
   const { audioRef } = useLocalAudioPlayback({
@@ -75,6 +83,8 @@ export default function App() {
   const volume = state.media.volumePercent;
   const activeSongId = state.media.activeTrackId;
   const activeSong = state.media.activeTrack;
+  const playbackPositionLabel = formatPlaybackTime(state.media.positionMs);
+  const playbackDurationLabel = formatPlaybackTime(state.media.durationMs);
   const spotify = state.spotify;
   const activeDspProfile = isDspProfileKey(state.media.audio.dspProfile)
     ? state.media.audio.dspProfile
@@ -380,6 +390,10 @@ export default function App() {
                     className="progress-thumb"
                     style={{ left: `${progress}%` }}
                   />
+                </div>
+                <div className="progress-time-row" aria-label="Playback progress">
+                  <span>{playbackPositionLabel}</span>
+                  <span>{playbackDurationLabel}</span>
                 </div>
               </div>
 

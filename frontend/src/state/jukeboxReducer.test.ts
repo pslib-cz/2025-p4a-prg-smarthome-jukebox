@@ -24,6 +24,19 @@ describe("applyJukeboxCommand", () => {
     expect(underVolumeState.media.volumePercent).toBe(0);
   });
 
+  it("tracks local playback position updates from the browser audio element", () => {
+    const nextState = applyJukeboxCommand(mockJukeboxState, {
+      type: "local_playback_state_changed",
+      progressPercent: 42,
+      positionMs: 84_000,
+      durationMs: 200_000,
+    });
+
+    expect(nextState.media.progressPercent).toBe(42);
+    expect(nextState.media.positionMs).toBe(84_000);
+    expect(nextState.media.durationMs).toBe(200_000);
+  });
+
   it("ignores play_track commands for unknown track ids", () => {
     const unchangedState = applyJukeboxCommand(mockJukeboxState, {
       type: "play_track",

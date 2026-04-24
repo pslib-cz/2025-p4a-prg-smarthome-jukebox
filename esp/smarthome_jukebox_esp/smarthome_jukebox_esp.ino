@@ -48,9 +48,9 @@ const int PIN_I2S_SD = 21;
 const int PIN_MODE_LED_DATA = 27;
 const int MODE_LED_COUNT = 8;
 const uint16_t MQTT_PACKET_BUFFER_BYTES = 1024;
-// Clap detection from the analog microphone signal.
-const int MIC_CLAP_THRESHOLD = 3200;
-const unsigned long CLAP_DEBOUNCE_MS = 300;
+const int MIC_CLAP_THRESHOLD = 3600;
+const int MIC_CLAP_DELTA_THRESHOLD = 850;
+const unsigned long CLAP_DEBOUNCE_MS = 450;
 // ======================
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
@@ -63,6 +63,7 @@ unsigned long lastHeartbeatMs = 0;
 unsigned long lastClapMs = 0;
 unsigned long lastModeAnimationMs = 0;
 bool ledState = false;
+int micBaseline = 2048;
 unsigned long clapCount = 0;
 String currentMode = "idle";
 uint16_t partyHueOffset = 0;
@@ -153,7 +154,10 @@ bool clapDetected() {
   return false;
 #else
   int micLevel = analogRead(PIN_MIC_ANALOG);
-  if (micLevel >= MIC_CLAP_THRESHOLD && (millis() - lastClapMs) > CLAP_DEBOUNCE_MS) {
+  int deltaFromBaseline = micLevel - micBaseline;
+  if (micLevel < MIC_CLAP_THRESHOLD) micBaseline = (micBaseline * 7 + micLevel) / 8;
+  if (micLevel >= MIC_CLAP_THRESHOLD && deltaFromBaseline >= MIC_CLAP_DELTA_THRESHOLD &&
+      (millis() - lastClapMs) > CLAP_DEBOUNCE_MS) {
     lastClapMs = millis();
     return true;
   }
@@ -393,7 +397,6 @@ void mqttCallback(char* topic, byte* message, unsigned int length) {
     handleMediaState(payload);
   }
 }
-
 void connectMqtt() {
   if (!mqttClient.setBufferSize(MQTT_PACKET_BUFFER_BYTES)) {
     Serial.println("Failed to grow MQTT packet buffer.");
@@ -489,8 +492,6 @@ void loop() {
     publishJsonValue(TOPIC_CLAP, String(clapCount), false);
     publishEvent("clap_detected");
   }
-
-  // Heartbeat LED so you see the firmware is alive.
   if (millis() - lastHeartbeatMs >= 1000) {
     lastHeartbeatMs = millis();
     ledState = !ledState;

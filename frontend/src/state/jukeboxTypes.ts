@@ -38,6 +38,8 @@ export interface MediaState {
   spotifyConnected: boolean;
   isPlaying: boolean;
   progressPercent: number;
+  positionMs?: number;
+  durationMs?: number;
   volumePercent: number;
   activeTrackId: number;
   activeTrack: JukeboxTrack;
@@ -190,6 +192,12 @@ export type JukeboxCommand =
   | { type: "previous" }
   | { type: "play_playlist"; playlistId: number }
   | { type: "seek"; progressPercent: number }
+  | {
+      type: "local_playback_state_changed";
+      progressPercent: number;
+      positionMs: number;
+      durationMs: number;
+    }
   | { type: "set_volume"; volumePercent: number }
   | { type: "set_mode"; mode: JukeboxMode }
   | { type: "set_theme"; theme: JukeboxTheme }
